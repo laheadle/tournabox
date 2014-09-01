@@ -1,38 +1,42 @@
 
-type player = int
-type choice = { players: player option * player option; winner: player option }
+type 'player choice = { player_pair: 'player option * 'player option; winner: 'player option }
 
-type round =  choice array
-type tourney = round array
+type 'player round =  'player choice array
+type 'player tourney = { rounds: 'player round array; players: 'player list }
+type 'player round_in_progress = 'player choice list
 
-let replace arr i f =
-  let old = arr.(i) in
-  arr.(i) <- f(old)
+let empty_choice = { player_pair=(None,None); winner=None };;
 
+let index_of_player player tourney =
+  let rec find i lst =
+	match lst with
+	  [] -> raise (Invalid_argument "player not found")
+	| hd :: tl -> 
+	  if hd = player then i
+	  else find (i + 1) tl
+  in
+  find 0 tourney.players
 
-(* integer exponentiation *)
-let rec pow a = function
-  | 0 -> 1
-  | 1 -> a
-  | n -> 
-    let b = pow a (n / 2) in
-    b * b * (if n mod 2 = 0 then 1 else a);;
+let num_rounds tourney =
+  Array.length tourney.rounds
 
-let empty_choice = { players=(None,None); winner=None };;
-
-let init num_rounds =
+let init (players: 'player list) =
+  let num_rounds = List.length players in
   let init_round i =
-	Array.make (pow 2 (num_rounds - i - 1)) empty_choice in
-  let init_first round =
+	Array.make (Util.pow 2 (num_rounds - i - 1)) empty_choice in
+  let init_first tourney = 
+	let round = tourney.rounds.(0) in
 	for i = 0 to Array.length round - 1 do
 	  let p1 =  i * 2 in
 	  let p2 =  i * 2 + 1 in
-	  replace round i (fun choice ->
-		  { choice with players=(Some p1, Some p2) })
+	  Util.replace round i (fun choice ->
+		  { choice with player_pair=(Some p1, Some p2) })
 	done
   in
-  let tourney = Array.init num_rounds init_round in
-  init_first tourney.(0);
+  let tourney = { 
+	players = players;
+	rounds = Array.init num_rounds init_round } in
+  init_first tourney;
   tourney
 
 let next_position curr = curr / 2;;
@@ -44,7 +48,7 @@ let path player tourney =
 	  let nnp = (next_position np) in
 	  iter (n - 1) nnp (nnp :: lst)
   in
-  List.rev (iter (Array.length tourney) player [])
+  List.rev (iter (Array.length tourney.rounds) player [])
 
 let path_intersect winpath losepath =
   let rec iter i lst1 lst2 =
@@ -64,16 +68,26 @@ let beat winner loser tourney =
   let losepath = path loser tourney in
   let (playedRound, winI) = path_intersect winpath losepath in
   let nextI = next_position winI in
-  replace tourney.(playedRound) winI (fun playedChoice ->
+  Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
 	{ playedChoice with winner = Some winner });
-  if playedRound < Array.length tourney - 1 then
+  if playedRound < num_rounds tourney - 1 then
 	let schedule nextChoice = match nextChoice with
-		{ players = (p1, _p2) } ->
+		{ player_pair = (p1, _p2) ; _ } ->
 		  assert (_p2 = None);
 		  if p1 = None then
-			{ nextChoice with players = (Some winner, None) }
+			{ nextChoice with player_pair = (Some winner, None) }
 		  else
-			{ nextChoice with players = (p1, Some winner) }
+			{ nextChoice with player_pair = (p1, Some winner) }
 	in
-	replace tourney.(playedRound + 1) nextI schedule
-;;
+	Util.replace (tourney.rounds.(playedRound + 1)) nextI schedule
+
+
+let undecided_choices tourney =
+  let undecided round =
+	List.filter 
+	  (function
+	  | { player_pair = None, None ; _ } -> false
+	  | _ -> true)
+	  (Array.to_list round)
+  in
+  List.map undecided (Array.to_list tourney.rounds)
