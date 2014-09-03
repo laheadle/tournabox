@@ -1,1 +1,0 @@
-val players: string list

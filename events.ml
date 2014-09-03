@@ -1,4 +1,4 @@
-let players = [
+let men_usopen_2014 = [
 "DJOKOVIC, Novak SRB [1]";
 "SCHWARTZMAN, Diego ARG";
 "MULLER, Gilles LUX";
@@ -128,6 +128,128 @@ let players = [
 "MATOSEVIC, Marinko AUS";
 "FEDERER, Roger SUI [2]"
 ]
-(*
+
+let outcomes_men_usopen_2014 = [
+  "DJOKOVIC";
+  "mathieu";
+  "Djokovic";
+  "Querrey";
+  "Garcia-Lopez";
+  "Querrey";
+  "Kohlschreiber";
+  "Llodra";
+  "Kohlschreiber";
+  "Struff";
+  "Isner";
+  "Isner";
+  "Tsonga";
+  "Nedovyesov";
+  "Tsonga";
+  "Busta";
+  "Paire";
+  "Carreno";
+  "Verdasco";
+  "Kuznetsov";
+  "Kuznetsov";
+  "Bachinger";
+  "Murray";
+  "Murray";
+  "Wawrinka";
+  "Bellucci";
+  "Wawrinka";
+  "Kavcic";
+  "Chardy";
+  "Kavcic";
+  "Kyrgios";
+  "Seppi";
+  "Kyrgios";
+  "Bolelli";
+  "Robredo";
+  "Robredo";
+  "Nishikori";
+  "Andujar";
+  "Nishikori";
+  "Ebden";
+  "Mayer";
+  "Mayer";
+  "Coric";
+  "Estrella Burgos";
+  "Estrella Burgos";
+  "Gojowczyk";
+  "Raonic";
+  "Raonic";
+
+"Berdych";
+"Klizan";
+"Berdych";
+"Kudryavtsev";
+"Gabashvili";
+"Gabashvil";
+"Lopez, f";
+"Ito, T";
+"Lopez, f";
+"Thiem";
+"Gulbis";
+"Thiem";
+"Cilic";
+"Marchenko";
+"Cilic";
+"Janowicz";
+"Anderson";
+"Anderson";
+"Simon, G";
+"Delbonis";
+"Simon, g";
+"Tomic";
+"Ferrer";
+"Ferrer";
+"Dimitrov";
+"Sela";
+"Dimitrov";
+"Goffin";
+"Sousa";
+"Goffin";
+"Monfils";
+"Gonzalez, A";
+"Monfils";
+"Lorenzi";
+"Gasquet";
+"Gasquet";
+"Fognini";
+"Mannarino";
+"Mannarino";
+"Smyczek";
+"Bautista";
+"Bautista";
+"Karlovic";
+"Granollers";
+"Granollers";
+"Groth";
+"Federer";
+"Federer";
+"Djokovic";
+"Kohlschreiber";
+"Djokovic";
+"Tsonga";
+"Murray";
+"Murray";
+"Wawrinka";
+"Robredo";
+"Wawrinka";
+"Nishikori";
+"Raonic";
+"Nishikori";
+"Berdych";
+"Thiem";
+"Berdych";
+"Cilic";
+"Simon, G";
+"Cilic";
+"Dimitrov";
+"Monfils";
+"Monfils";
+"Agut";
+"Federer";
+"Federer"
+
 ]
-*)
