@@ -1,143 +1,190 @@
 
-open Players
+open Players;;
 
-let tourney = Tourney.init players
-
+let tourney = Tourney.init players in
 let outcomes = [
-  ("DJOKOVIC, Novak SRB [1]", "SCHWARTZMAN, Diego ARG")
-]
+  "DJOKOVIC";
+  "mathieu";
+  "Djokovic";
+  "Querrey";
+  "Garcia-Lopez";
+  "Querrey";
 
-let current_state = List.fold_left (fun tourney outcome ->
-  match outcome with
-  | (win, lose) -> Tourney.beat win lose tourney)
+  "Kohlschreiber";
+  "Llodra";
+  "Kohlschreiber";
+  "Struff";
+  "Isner";
+  "Isner";
+  "Tsonga";
+  "Nedovyesov";
+  "Tsonga";
+  "Busta";
+  "Paire";
+  "Carreno";
+  "Verdasco";
+  "Kuznetsov";
+  "Kuznetsov";
+  "Bachinger";
+  "Murray";
+  "Murray";
+  "Wawrinka";
+  "Bellucci";
+  "Wawrinka";
+  "Kavcic";
+  "Chardy";
+  "Kavcic";
+  "Kyrgios";
+  "Seppi";
+  "Kyrgios";
+  "Bolelli";
+  "Robredo";
+  "Robredo";
+  "Nishikori";
+  "Andujar";
+  "Nishikori";
+  "Ebden";
+  "Mayer";
+  "Mayer";
+  "Coric";
+  "Estrella Burgos";
+  "Estrella Burgos";
+  "Gojowczyk";
+  "Raonic";
+  "Raonic";
+
+"Berdych";
+"Klizan";
+"Berdych";
+"Kudryavtsev";
+"Gabashvili";
+"Gabashvil";
+"Lopez, f";
+"Ito, T";
+"Lopez, f";
+"Thiem";
+"Gulbis";
+"Thiem";
+"Cilic";
+"Marchenko";
+"Cilic";
+"Janowicz";
+"Anderson";
+"Anderson";
+"Simon, G";
+"Delbonis";
+"Simon, g";
+"Tomic";
+"Ferrer";
+"Ferrer";
+"Dimitrov";
+"Sela";
+"Dimitrov";
+"Goffin";
+"Sousa";
+"Goffin";
+"Monfils";
+"Gonzalez, A";
+"Monfils";
+"Lorenzi";
+"Gasquet";
+"Gasquet";
+"Fognini";
+"Mannarino";
+"Mannarino";
+"Smyczek";
+"Bautista";
+"Bautista";
+"Karlovic";
+"Granollers";
+"Granollers";
+"Groth";
+"Federer";
+"Federer";
+"Djokovic";
+"Kohlschreiber";
+"Djokovic";
+"Tsonga";
+"Murray";
+"Murray";
+"Wawrinka";
+"Robredo";
+"Wawrinka";
+"Nishikori";
+"Raonic";
+"Nishikori";
+"Berdych";
+"Thiem";
+"Berdych";
+"Cilic";
+"Simon, G";
+"Cilic";
+"Dimitrov";
+"Monfils";
+"Monfils";
+"Agut";
+"Federer";
+"Federer"
+
+] in
+
+let contains s1 s2 =
+  let re = Str.regexp_string s2
+  in
+  try ignore (Str.search_forward re s1 0); true
+  with Not_found -> false
+in
+
+let pick tourney partial =
+  let up = String.uppercase in
+  let matching = List.filter (fun player ->
+	contains (up player) (up partial)) (Tourney.players tourney) in
+  if List.length matching = 1 then
+	List.hd matching
+  else
+	raise (Invalid_argument ("bad player " ^ partial))
+in
+
+let won tourney partial =
+  let player = pick tourney partial in
+  Tourney.won tourney player
+in
+
+let current_state = List.fold_left (fun tourney win -> won tourney win)
   tourney outcomes
-  
+in
 
 (*
-"MULLER, Gilles LUX",
-"MATHIEU, Paul-Henri FRA",
-"GONZALEZ, Maximo ARG",
-"QUERREY, Sam USA",
-"LU, Yen-Hsun TPE",
-"GARCIA-LOPEZ, Guillermo ESP [28]",
-"KOHLSCHREIBER, Philipp GER [22]",
-"BAGNIS, Facundo ARG (Q)",
-"LLODRA, Michael FRA (W)",
-"GIMENO-TRAVER, Daniel ESP",
-"KUKUSHKIN, Mikhail KAZ",
-"STRUFF, Jan-Lennard GER",
-"GIRON, Marcos USA (W)",
-"ISNER, John USA [13]",
-"TSONGA, Jo-Wilfried FRA [9]",
-"MONACO, Juan ARG",
-"MCGEE, James IRL (Q)",
-"NEDOVYESOV, Aleksandr KAZ",
-"CARRENO BUSTA, Pablo ESP",
-"BECK, Andreas GER (Q)",
-"PAIRE, Benoit FRA",
-"BENNETEAU, Julien FRA [24]",
-"VERDASCO, Fernando ESP [31]",
-"ROLA, Blaz SLO",
-"KLAHN, Bradley USA",
-"KUZNETSOV, Andrey RUS",
-"BACHINGER, Matthias GER (Q)",
-"STEPANEK, Radek CZE",
-"HAASE, Robin NED",
-"MURRAY, Andy GBR [8]",
-"WAWRINKA, Stan SUI [3]",
-"VESELY, Jiri CZE",
-"BELLUCCI, Thomaz BRA",
-"MAHUT, Nicolas FRA",
-"KAVCIC, Blaz SLO",
-"YOUNG, Donald USA",
-"FALLA, Alejandro COL",
-"CHARDY, Jeremy FRA [30]",
-"YOUZHNY, Mikhail RUS [21]",
-"KYRGIOS, Nick AUS",
-"STAKHOVSKY, Sergiy UKR",
-"SEPPI, Andreas ITA",
-"BOLELLI, Simone ITA",
-"POSPISIL, Vasek CAN",
-"ROGER-VASSELIN, Edouard FRA",
-"ROBREDO, Tommy ESP [16]",
-"NISHIKORI, Kei JPN [10]",
-"ODESNIK, Wayne USA (W)",
-"ANDUJAR, Pablo ESP",
-"SOCK, Jack USA",
-"EBDEN, Matthew AUS",
-"KAMKE, Tobias GER",
-"MONTANES, Albert ESP",
-"MAYER, Leonardo ARG [23]",
-"ROSOL, Lukas CZE [29]",
-"CORIC, Borna CRO (Q)",
-"ESTRELLA BURGOS, Victor DOM",
-"SIJSLING, Igor NED",
-"GOJOWCZYK, Peter GER (Q)",
-"BECKER, Benjamin GER",
-"DANIEL, Taro JPN (Q)",
-"RAONIC, Milos CAN [5]",
-"BERDYCH, Tomas CZE [6]",
-"HEWITT, Lleyton AUS",
-"DARCIS, Steve BEL (Q)",
-"KLIZAN, Martin SVK",
-"DONSKOY, Evgeny RUS",
-"KUDRYAVTSEV, Alexander RUS (Q)",
-"GABASHVILI, Teymuraz RUS",
-"GIRALDO, Santiago COL [27]",
-"LOPEZ, Feliciano ESP [19]",
-"DODIG, Ivan CRO",
-"JOHNSON, Steve USA",
-"ITO, Tatsuma JPN (Q)",
-"LACKO, Lukas SVK",
-"THIEM, Dominic AUT",
-"DE SCHEPPER, Kenny FRA",
-"GULBIS, Ernests LAT [11]",
-"CILIC, Marin CRO [14]",
-"BAGHDATIS, Marcos CYP",
-"MARCHENKO, Illya UKR (Q)",
-"CHIUDINELLI, Marco SUI (Q)",
-"JANOWICZ, Jerzy POL",
-"LAJOVIC, Dusan SRB",
-"CUEVAS, Pablo URU",
-"ANDERSON, Kevin RSA [18]",
-"SIMON, Gilles FRA [26]",
-"ALBOT, Radu MDA (Q)",
-"RUBIN, Noah USA (W)",
-"DELBONIS, Federico ARG",
-"TOMIC, Bernard AUS (W)",
-"BROWN, Dustin GER",
-"DZUMHUR, Damir BIH",
-"FERRER, David ESP [4]",
-"DIMITROV, Grigor BUL [7]",
-"HARRISON, Ryan USA (W)",
-"BERLOCQ, Carlos ARG",
-"SELA, Dudi ISR",
-"DESEIN, Niels BEL (Q)",
-"GOFFIN, David BEL",
-"DANCEVIC, Frank CAN",
-"SOUSA, Joao POR [32]",
-"MONFILS, Gael FRA [20]",
-"DONALDSON, Jared USA (W)",
-"GONZALEZ, Alejandro COL",
-"TURSUNOV, Dmitry RUS",
-"NISHIOKA, Yoshihito JPN (Q)",
-"LORENZI, Paolo ITA",
-"ISTOMIN, Denis UZB",
-"GASQUET, Richard FRA [12]",
-"FOGNINI, Fabio ITA [15]",
-"GOLUBEV, Andrey KAZ",
-"RIBA, Pere ESP",
-"MANNARINO, Adrian FRA",
-"KRAJINOVIC, Filip SRB (Q)",
-"SMYCZEK, Tim USA (W)",
-"HAIDER-MAURER, Andreas AUT",
-"BAUTISTA AGUT, Roberto ESP [17]",
-"KARLOVIC, Ivo CRO [25]",
-"NIEMINEN, Jarkko FIN",
-"MELZER, Jurgen AUT",
-"GRANOLLERS, Marcel ESP",
-"RAMOS-VINOLAS, Albert ESP",
-"GROTH, Sam AUS",
-"MATOSEVIC, Marinko AUS",
-"FEDERER, Roger SUI [2]"
+let print_tourney t = 
+  Printf.printf "%s" (Tourney.to_string t (fun pl -> pl))
+in
+print_tourney tourney;
 *)
+
+let undecided = Tourney.undecided_choices current_state in
+let decided = Tourney.decided_choices current_state in
+
+List.iteri (fun i round ->
+  Printf.printf "round %d - %d decided\n" (i + 1) (List.length round);
+  List.iteri (fun i choice -> 
+	match choice with
+	| { Tourney.player_pair = Some a, Some b; Tourney.winner = Some c } ->
+	  Printf.printf "  %d: %s vs %s - winner: %s\n" i a b c
+	| _ -> failwith "bug")
+	round)
+  decided; 
+
+List.iteri (fun i round ->
+  Printf.printf "round %d - %d undecided\n" (i + 1) (List.length round);
+  List.iteri (fun i choice -> 
+	match choice with
+	| { Tourney.player_pair = Some a, Some b } -> Printf.printf "  %d: %s vs %s\n" i a b
+	| { Tourney.player_pair = None, Some b }-> Printf.printf "  %d: [] vs %s\n" i b
+	| { Tourney.player_pair = Some a, None } -> Printf.printf "  %d: [] vs %s\n" i a
+	| _ -> Printf.printf "%d: [] vs []" i)
+	round)
+  undecided 
+
+
+
+

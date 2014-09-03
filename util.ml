@@ -14,4 +14,25 @@ let replace arr i f =
   arr.(i) <- f(old)
 
 
+let power_of_two n  =
+  let rec iter k =
+	if k = n then true
+	else if k > n then false
+	else iter (k * 2)
+  in
+  if n < 1 then false
+	else
+	iter 1
+
+let log base n =
+  let rec iter k j =
+	if j > n then
+	  raise (Invalid_argument "bad log")
+	else
+	  if j = n then
+		k
+	  else
+		iter (k + 1) (j * base)
+  in
+  iter 1 base
 

@@ -21,3 +21,10 @@ val progress : 'player -> 'player tourney -> 'player choice list
   *)
 
 val undecided_choices: 'player tourney -> 'player round_in_progress list
+val decided_choices: 'player tourney -> 'player round_in_progress list
+
+val to_string: 'player tourney -> ('player -> string) -> string
+
+val players: 'player tourney -> 'player list
+
+val won: 'player tourney -> 'player -> 'player tourney

@@ -1,2 +1,2 @@
 
-val current_state: string Tourney.tourney
+(*val current_state: string Tourney.tourney*)
