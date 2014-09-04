@@ -250,7 +250,8 @@ let outcomes_men_usopen_2014 = [
 "Monfils";
 "Agut";
 "Federer";
-"Federer"
+"Federer";
+"nishik";
 
 ]
 
@@ -508,6 +509,7 @@ let outcomes_women_usopen_2014 = [
 "WOZNIACKI";
 "ERRANI";
 "PENG";
-"WOZNIACKI"
-
+"WOZNIACKI";
+"williams, s";
+"makarova"
 ]
