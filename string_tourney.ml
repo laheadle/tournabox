@@ -1,23 +1,7 @@
-let contains s1 s2 =
-  let re = Str.regexp_string s2
-  in
-  try ignore (Str.search_forward re s1 0); true
-  with Not_found -> false
 
 
 let pick tourney partial =
-  let up = String.uppercase in
-  let matching = List.filter (fun player ->
-	contains (up player) (up partial)) (Tourney.players tourney) in
-  if List.length matching = 1 then
-	List.hd matching
-  else
-	raise (Invalid_argument
-			 (List.fold_left 
-				(fun strs player ->
-				  strs ^ player ^ "; ")
-				("bad player: " ^ partial ^ " could be: ")
-				matching))
+  Util.pick (Tourney.players tourney) partial
 
 let won tourney partial =
   let player = pick tourney partial in
