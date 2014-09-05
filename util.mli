@@ -6,4 +6,5 @@ val power_of_two: int -> bool
 
 val log: int -> int -> int
 
+val pick: 'a list -> string -> ('a -> string) -> 'a
 

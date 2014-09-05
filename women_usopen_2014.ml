@@ -1,21 +1,12 @@
 
 open Events;;
 
-let tourney = Tourney.init women_usopen_2014 in
+let db = Player.make_db () in
 
-let current_state = List.fold_left (fun tourney win -> String_tourney.won tourney win)
-  tourney outcomes_women_usopen_2014
+let tourney = Tourney.init (Events.women_usopen_2014 db) in
+
+let current_state = List.fold_left (fun tourney win -> Seeded_tourney.won_str tourney win)
+  tourney Events.outcomes_women_usopen_2014
 in
-String_tourney.print_tourney current_state
 
-(*
-let print_tourney t = 
-  Printf.printf "%s" (Tourney.to_string t (fun pl -> pl))
-in
-print_tourney tourney;
-*)
-
-
-
-
-
+Tourney.print current_state Player_entry.to_string
