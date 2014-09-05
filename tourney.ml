@@ -37,7 +37,7 @@ let choice_of_ichoice { iplayer_pair=(p1,p2); winner } (tourney: 'player tourney
 let num_rounds tourney =
   Array.length tourney.rounds
 
-let init (players: 'player list) =
+let init players =
   let len = List.length players in
   Printf.printf "#players: %d\n" len;
   let num_rounds = if Util.power_of_two len then Util.log 2 len
@@ -160,3 +160,32 @@ let to_string tourney pfunc =
 	"" tourney.players 
 
 let players tourney = tourney.players
+
+let print tourney player_to_string =
+  let undecided = undecided_choices tourney in
+  let decided = decided_choices tourney in
+
+  List.iteri (fun i round ->
+	Printf.printf "round %d - %d decided\n" (i + 1) (List.length round);
+	List.iteri (fun i choice -> 
+	  match choice with
+	  | { player_pair = Some a, Some b; winner = Some c } ->
+		Printf.printf "  %d: %s vs %s - winner: %s\n"
+		  i (player_to_string a) (player_to_string b) (player_to_string c)
+	  | _ -> failwith "bug")
+	  round)
+	decided; 
+
+  List.iteri (fun i round ->
+	Printf.printf "round %d - %d undecided\n" (i + 1) (List.length round);
+	List.iteri (fun i choice -> 
+	  match choice with
+	  | { player_pair = Some a, Some b } ->
+		Printf.printf "  %d: %s vs %s\n" i (player_to_string a) (player_to_string b)
+	  | { player_pair = None, Some b }->
+		Printf.printf "  %d: [] vs %s\n" i (player_to_string b)
+	  | { player_pair = Some a, None } -> 
+		Printf.printf "  %d: [] vs %s\n" i (player_to_string a)
+	  | _ -> Printf.printf "%d: [] vs []" i)
+	  round)
+	undecided 

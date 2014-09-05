@@ -28,3 +28,5 @@ val to_string: 'player tourney -> ('player -> string) -> string
 val players: 'player tourney -> 'player list
 
 val won: 'player tourney -> 'player -> 'player tourney
+
+val print: 'player tourney -> ('player -> string) -> unit

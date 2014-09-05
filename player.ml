@@ -1,4 +1,4 @@
-let men =
+let men = [
 "DJOKOVIC, Novak SRB";
 "SCHWARTZMAN, Diego ARG";
 "MULLER, Gilles LUX";
@@ -260,18 +260,24 @@ let women = [
 "HALEP, Simona ROU";
 ]
 
+type gender = 
+  Male | Female
+
 type t = { name: string; country: string; gender: gender }
 
-let parse str =
+let parse gender str =
   let len = String.length str in
-  let country = String.substr str (len - 3) len in
-  let name = String.substr str 0 (len - 3) in
-  { name: name; country: country }
+(*  Printf.printf "%s\n" str;*)
+  let country = String.sub str (len - 3) 3 in
+(*  Printf.printf "%s\n" country;*)
+  let name = String.sub str 0 (len - 3) in
+  (*Printf.printf "%s\n" name;*)
+  { name = name; country = country; gender = gender }
 
 type db = t list
 
 let make_db () =
-  List.append (List.map parse men) (List.map parse women)
+  List.append (List.map (parse Male) men) (List.map (parse Female) women)
 
 let pick str db =
   Util.pick db str (fun x -> x.name ^ " " ^ x.country)

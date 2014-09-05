@@ -44,16 +44,15 @@ let contains s1 s2 =
 
 
 let pick list partial to_string =
-  let partial = to_string partial in
   let up = String.uppercase in
   let matching = List.filter (fun thing ->
-	contains (up thing) (up partial)) list in
+	contains (up (to_string thing)) (up partial)) list in
   if List.length matching = 1 then
 	List.hd matching
   else
 	raise (Invalid_argument
 			 (List.fold_left 
 				(fun strs thing ->
-				  strs ^ thing ^ "; ")
+				  strs ^ (to_string thing) ^ "; ")
 				("bad thing: " ^ partial ^ " could be: ")
 				matching))
