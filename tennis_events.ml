@@ -24,7 +24,7 @@ let make_entries db lst =
 (*	let () = match (name, seed) with
 		str, None -> Printf.printf "%s none" str
 	  | 	  str, Some i -> Printf.printf "%s [%d]" str i in *)
-	Player_entry.of_string name db seed
+	Tennis_player_entry.of_string name db seed
   in
   List.map entry lst
 
@@ -545,5 +545,7 @@ let outcomes_women_usopen_2014 = [
 "PENG";
 "WOZNIACKI";
 "williams, s";
-"makarova"
+"makarova";
+"williams, s";
+"wozniacki"
 ]
