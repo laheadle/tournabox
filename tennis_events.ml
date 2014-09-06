@@ -1,6 +1,5 @@
 let make_entries db lst =
   let name_regex = Str.regexp "\\(^.+\\) [A-Z][A-Z][A-Z]" in
-(*  let seed_regex = Str.regexp "\\[\\(0-9+\\)\\]$" in*)
   let seed_regex = Str.regexp "\\[\\([0-9]+\\)\\]$" in
 
   let get_seed str =
@@ -15,15 +14,13 @@ let make_entries db lst =
 	  raise Not_found
   in
   let entry str =
-	let seed = try
-				 Some (get_seed str)
+	let seed =
+	  try
+		Some (get_seed str)
 	  with Not_found ->
 		None
 	in
 	let name = get_name str in
-(*	let () = match (name, seed) with
-		str, None -> Printf.printf "%s none" str
-	  | 	  str, Some i -> Printf.printf "%s [%d]" str i in *)
 	Tennis_player_entry.of_string name db seed
   in
   List.map entry lst
