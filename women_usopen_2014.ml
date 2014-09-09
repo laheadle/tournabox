@@ -258,7 +258,8 @@ let outcomes_women_usopen_2014 = [
 "williams, s";
 "makarova";
 "williams, s";
-"wozniacki"
+"wozniacki";
+"williams, s"
 ]
 in
 

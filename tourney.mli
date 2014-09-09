@@ -10,8 +10,6 @@ type 'player tourney
 
 val init : 'player list -> 'player tourney
 
-val beat : 'player -> 'player -> 'player tourney -> 'player tourney
-
 val num_rounds: 'player tourney -> int
 
 (*

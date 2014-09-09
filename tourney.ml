@@ -96,64 +96,54 @@ let playing tourney player =
   in
   find choices
 
-let beat_impl winner loser tourney = 
-  let winpath = path winner tourney in
-  let losepath = path loser tourney in
-  let (playedRound, winI) = path_intersect winpath losepath in
-  let nextI = next_position winI in
-  Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
-	{ playedChoice with winner = Some winner });
-  if playedRound < num_rounds tourney - 1 then
-	let schedule nextChoice = match nextChoice with
-		{ iplayer_pair = (p1, _p2) ; _ } ->
-		  assert (_p2 = None);
-		  if p1 = None then
-			{ nextChoice with iplayer_pair = (Some winner, None) }
-		  else
-			{ nextChoice with iplayer_pair = (p1, Some winner) }
-	in
-	Util.replace (tourney.rounds.(playedRound + 1)) nextI schedule
-  else
-	();
-  tourney
-
-let beat winner loser tourney = 
-  let winner = index_of_player winner tourney in
-  let loser = index_of_player loser tourney in
-  beat_impl winner loser tourney
-
 let won tourney player =
-  beat_impl (index_of_player player tourney)
-	(playing tourney (index_of_player player tourney)) tourney
+  let impl winner loser = 
+	let winpath = path winner tourney in
+	let losepath = path loser tourney in
+	let (playedRound, winI) = path_intersect winpath losepath in
+	let nextI = next_position winI in
+	Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
+	  { playedChoice with winner = Some winner });
+	if playedRound < num_rounds tourney - 1 then
+	  let schedule nextChoice = match nextChoice with
+		  { iplayer_pair = (p1, _p2) ; _ } ->
+			assert (_p2 = None);
+			if p1 = None then
+			  { nextChoice with iplayer_pair = (Some winner, None) }
+			else
+			  { nextChoice with iplayer_pair = (p1, Some winner) }
+	  in
+	  Util.replace (tourney.rounds.(playedRound + 1)) nextI schedule
+	else
+	  ();
+	tourney
+  in
+  impl (index_of_player player tourney)
+	(playing tourney (index_of_player player tourney))
 
-let undecided_choices (tourney: 'player tourney) =
-  let undecided round =
-	let ichoices: ichoice list = List.filter 
-	  (function
-	  | { iplayer_pair = None, None ; _ } -> false
-	  | { winner = Some _ } -> false
-	  | _ -> true)
+let filter_choices tourney (fn: ichoice -> bool) =
+  let filter round =
+	let ichoices = List.filter 
+	  fn
 	  (Array.to_list round)
 	in
-	List.map (fun (ic:ichoice) ->
+	List.map (fun ic ->
 	  choice_of_ichoice ic tourney)
 	  ichoices
   in
-  List.map undecided (Array.to_list tourney.rounds)
+  List.map filter (Array.to_list tourney.rounds)
 
-let decided_choices (tourney: 'player tourney) =
-  let decided round =
-	let ichoices: ichoice list = List.filter 
-	  (function
-	  | { winner = Some _ } -> true
-	  | _ -> false)
-	  (Array.to_list round)
-	in
-	List.map (fun (ic:ichoice) ->
-	  choice_of_ichoice ic tourney)
-	  ichoices
-  in
-  List.map decided (Array.to_list tourney.rounds)
+let undecided_choices tourney =
+  filter_choices tourney
+	(function { iplayer_pair = None, None ; _ } -> false
+	| { winner = Some _ } -> false
+	| _ -> true)
+
+let decided_choices tourney =
+  filter_choices tourney
+	(function { winner = Some _ } -> true
+	| _ -> false)
+
 
 let to_string tourney pfunc =
   List.fold_left (fun str player -> str ^ (pfunc player) ^ "\n")
@@ -171,7 +161,7 @@ let print tourney player_to_string =
 	  match choice with
 	  | { player_pair = Some a, Some b; winner = Some c } ->
 		Printf.printf "  %d: %s vs %s - winner: %s\n"
-		  i (player_to_string a) (player_to_string b) (player_to_string c)
+		  (i + 1) (player_to_string a) (player_to_string b) (player_to_string c)
 	  | _ -> failwith "bug")
 	  round)
 	decided; 
@@ -181,11 +171,11 @@ let print tourney player_to_string =
 	List.iteri (fun i choice -> 
 	  match choice with
 	  | { player_pair = Some a, Some b } ->
-		Printf.printf "  %d: %s vs %s\n" i (player_to_string a) (player_to_string b)
+		Printf.printf "  %d: %s vs %s\n" (i + 1) (player_to_string a) (player_to_string b)
 	  | { player_pair = None, Some b }->
-		Printf.printf "  %d: [] vs %s\n" i (player_to_string b)
+		Printf.printf "  %d: [] vs %s\n" (i + 1) (player_to_string b)
 	  | { player_pair = Some a, None } -> 
-		Printf.printf "  %d: [] vs %s\n" i (player_to_string a)
-	  | _ -> Printf.printf "%d: [] vs []" i)
+		Printf.printf "  %d: [] vs %s\n" (i + 1) (player_to_string a)
+	  | _ -> Printf.printf "%d: [] vs []" (i + 1))
 	  round)
 	undecided 
