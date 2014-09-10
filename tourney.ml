@@ -144,6 +144,47 @@ let decided_choices tourney =
 	(function { winner = Some _ } -> true
 	| _ -> false)
 
+let num_players tourney = List.length tourney.players
+
+let choices_per_player tourney compare_player =
+  let choices = Array.make (num_players tourney) [] in
+  let replace k ic =
+	Util.replace choices k (fun lst ->
+	  (choice_of_ichoice ic tourney)  :: lst) in
+  for i = 0 to Array.length tourney.rounds - 1 do
+	let round = tourney.rounds.(i) in
+	for i = 0 to Array.length round - 1 do
+	  match round.(i) with
+		{ iplayer_pair = (Some k, Some j) } as ichoice ->
+		  replace k ichoice;
+		  (* Make sure the reference player comes first *)
+		  replace j { ichoice with iplayer_pair = ( Some j, Some k ) };
+	  | { iplayer_pair = (None, Some k) } as ichoice ->
+		  replace k { ichoice with iplayer_pair = ( Some k, None ) };
+	  | { iplayer_pair = (Some k, None) } as ichoice ->
+		  replace k ichoice;
+	  | _ -> (); (* skip empties *)
+	done
+  done;
+  Array.sort compare_player choices;
+  choices
+
+
+let print_by_player tourney player_to_string =
+  let by_player = choices_per_player tourney 
+  (fun lst1 lst2 -> compare (List.length lst1) (List.length lst2)) in
+
+  Array.iteri (fun i choices ->
+	let len = List.length choices in
+	List.iteri (fun i choice -> 
+	  match choice with
+	  | { player_pair = Some a, Some b; winner = Some c } ->
+		Printf.printf "round %d: %s vs %s - winner: %s\n"
+		  (len - i) (player_to_string a) (player_to_string b) (player_to_string c)
+	  | _ -> failwith "bug")
+	  choices;
+  Printf.printf "\n")
+  by_player
 
 let to_string tourney pfunc =
   List.fold_left (fun str player -> str ^ (pfunc player) ^ "\n")

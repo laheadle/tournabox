@@ -1,30 +1,26 @@
 
-type 'player choice = {
-  player_pair : 'player option * 'player option;
-  winner : 'player option;
+type 'a choice = {
+  player_pair : 'a option * 'a option;
+  winner : 'a option;
 }
 
-type 'player round_in_progress = 'player choice list
+type 'a round_in_progress = 'a choice list
 
-type 'player tourney
+type 'a tourney
 
-val init : 'player list -> 'player tourney
+val init : 'a list -> 'a tourney
 
-val num_rounds: 'player tourney -> int
+val num_rounds: 'a tourney -> int
 
-(*
-val round_scheduled: 'player -> 'player -> 'player_tourney -> int
+val undecided_choices: 'a tourney -> 'a round_in_progress list
+val decided_choices: 'a tourney -> 'a round_in_progress list
 
-val progress : 'player -> 'player tourney -> 'player choice list
-  *)
+val to_string: 'a tourney -> ('a -> string) -> string
 
-val undecided_choices: 'player tourney -> 'player round_in_progress list
-val decided_choices: 'player tourney -> 'player round_in_progress list
+val players: 'a tourney -> 'a list
+val num_players: 'a tourney -> int
 
-val to_string: 'player tourney -> ('player -> string) -> string
+val won: 'a tourney -> 'a -> 'a tourney
 
-val players: 'player tourney -> 'player list
-
-val won: 'player tourney -> 'player -> 'player tourney
-
-val print: 'player tourney -> ('player -> string) -> unit
+val print: 'a tourney -> ('a -> string) -> unit
+val print_by_player: 'a tourney -> ('a -> string) -> unit
