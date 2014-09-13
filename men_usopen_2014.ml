@@ -256,7 +256,10 @@ let outcomes_men_usopen_2014 = [
 "nishik";
 "DJOKOVIC,";
 "CILIC, Mari";
-"FEDERER, Roger"
+"FEDERER, Roger";
+"nishik";
+"CILIC, Mari";
+"CILIC, Mari";
 ]
 in
 
