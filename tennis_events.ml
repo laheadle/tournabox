@@ -1,17 +1,21 @@
 let make_entries db lst =
-  let name_regex = Str.regexp "\\(^.+\\) [A-Z][A-Z][A-Z]" in
-  let seed_regex = Str.regexp "\\[\\([0-9]+\\)\\]$" in
+(*  let name_regex = Regexp.regexp "\\(^.+\\) [A-Z][A-Z][A-Z]" in
+  let seed_regex = Regexp.regexp "\\[\\([0-9]+\\)\\]$" in
+*)
+  let name_regex = Regexp.regexp "(^.+) [A-Z][A-Z][A-Z]" in
+  let seed_regex = Regexp.regexp "\\[([0-9]+)\\]$" in
 
   let get_seed str =
-	let _ = Str.search_forward seed_regex str 0 in
-	int_of_string (Str.matched_group 1 str)
+	match Regexp.search_forward seed_regex str 0 with
+	  None -> raise Not_found
+	| Some (i, result) -> int_of_string
+	  (match Regexp.matched_group result 1 with None -> raise Not_found | Some x -> x)
   in
   let get_name str =
-	let matched = Str.string_match name_regex str 0 in
-	if matched then
-	  Str.matched_group 1 str
-	else
-	  raise Not_found
+	match Regexp.string_match name_regex str 0 with
+	  None -> raise Not_found
+	| Some result -> (match Regexp.matched_group result 1 with None -> raise Not_found | Some x -> x)
+	
   in
   let entry str =
 	let seed =

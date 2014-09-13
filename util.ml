@@ -37,11 +37,11 @@ let log base n =
   iter 1 base
 
 let contains s1 s2 =
-  let re = Str.regexp_string s2
+  let re = Regexp.regexp_string s2
   in
-  try ignore (Str.search_forward re s1 0); true
-  with Not_found -> false
-
+  match Regexp.search_forward re s1 0 with
+	None -> false
+  | _ -> true
 
 let pick list partial to_string =
   let up = String.uppercase in

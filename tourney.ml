@@ -146,7 +146,7 @@ let decided_choices tourney =
 
 let num_players tourney = List.length tourney.players
 
-let choices_per_player tourney compare_player =
+let choices_per_player tourney ~compare_player =
   let choices = Array.make (num_players tourney) [] in
   let replace k ic =
 	Util.replace choices k (fun lst ->
@@ -169,8 +169,56 @@ let choices_per_player tourney compare_player =
   Array.sort compare_player choices;
   choices
 
-
 let print_by_player tourney player_to_string =
+  let doc = Dom_html.document in
+  let container = doc##body in
+
+  let by_player = choices_per_player tourney 
+  ~compare_player: (fun lst1 lst2 ->
+	compare (List.length lst2) (List.length lst1)) in
+
+  let do_player i choices =
+	let player_str =
+ 	  (match List.hd choices with { player_pair = (Some a, _) } ->
+		player_to_string a | _ -> failwith "bug") in
+	let addTd tr str className =
+	  let td = Dom_html.createTd doc in
+	  (match className with
+		None -> ()
+	  | Some c -> td##className <- (Js.string c));
+	  Dom.appendChild td (doc##createTextNode (Js.string str));
+	  Dom.appendChild tr td in
+	let len = List.length choices in
+	let table = Dom_html.createTable doc in
+	let header = Dom_html.createDiv doc in
+	addTd header player_str (Some "tourney-player");
+	Dom.appendChild table header;
+	let do_choice i choice =
+	  let () = match choice with
+		| { player_pair = Some a, Some b; winner = Some c } ->
+		  let outcome = if c = a then "Defeated" else "Was defeated by" in
+		  let row = Dom_html.createTr doc in	
+		  addTd row outcome
+			(Some (if c = a then "tourney-won" else "tourney-lost"));
+		  addTd row (player_to_string b) None;
+		  addTd row ("In round " ^ (string_of_int (len - i))) None;
+		  Dom.appendChild table row
+		| { player_pair = Some a, Some b; winner = None } ->
+		  let row = Dom_html.createTr doc in	
+		  addTd row "will play" None;
+		  addTd row (player_to_string b) None;
+		| { player_pair = Some a, None; winner = None } ->
+		  let row = Dom_html.createTr doc in	
+		  addTd row "will play" None;
+		  addTd row "To be determined" None;
+		| _ -> failwith "bug" in
+	  Dom.appendChild container table
+	in
+	List.iteri do_choice choices
+  in
+  Array.iteri do_player by_player
+
+let oldprint_by_player tourney player_to_string =
   let by_player = choices_per_player tourney 
   (fun lst1 lst2 -> compare (List.length lst1) (List.length lst2)) in
 
