@@ -169,10 +169,56 @@ let choices_per_player tourney ~compare_player =
   Array.sort compare_player choices;
   choices
 
-let print_by_player tourney player_to_string =
-  let doc = Dom_html.document in
-  let container = doc##body in
+let oldprint_by_player tourney player_to_string =
+  let by_player = choices_per_player tourney 
+  (fun lst1 lst2 -> compare (List.length lst1) (List.length lst2)) in
 
+  Array.iteri (fun i choices ->
+	let len = List.length choices in
+	List.iteri (fun i choice -> 
+	  match choice with
+	  | { player_pair = Some a, Some b; winner = Some c } ->
+		Printf.printf "round %d: %s vs %s - winner: %s\n"
+		  (len - i) (player_to_string a) (player_to_string b) (player_to_string c)
+	  | _ -> failwith "bug")
+	  choices;
+  Printf.printf "\n")
+  by_player
+
+let to_string tourney pfunc =
+  List.fold_left (fun str player -> str ^ (pfunc player) ^ "\n")
+	"" tourney.players 
+
+let players tourney = tourney.players
+
+let delete_children str =
+  let doc = Dom_html.document##getElementById (Js.string str) in
+  Js.Opt.case doc (fun _ -> ())
+    (fun node ->
+       let children = node##childNodes in
+       for i = 0 to children##length - 1 do
+         Js.Opt.iter (node##firstChild) (fun child -> Dom.removeChild node child) ;
+       done
+    )
+
+let doc = Dom_html.document
+
+let addTd tr str className =
+  let td = Dom_html.createTd doc in
+  (match className with
+	None -> ()
+  | Some c -> td##className <- (Js.string c));
+  Dom.appendChild td (doc##createTextNode (Js.string str));
+  Dom.appendChild tr td 
+
+
+let rec print_by_player tourney player_to_string =
+  let doc = Dom_html.document in
+  let container = 
+	let c = doc##getElementById (Js.string "container") in
+	Js.Opt.case c (fun () -> failwith "no container")
+	  (fun node -> node)
+  in
   let by_player = choices_per_player tourney 
   ~compare_player: (fun lst1 lst2 ->
 	compare (List.length lst2) (List.length lst1)) in
@@ -181,13 +227,6 @@ let print_by_player tourney player_to_string =
 	let player_str =
  	  (match List.hd choices with { player_pair = (Some a, _) } ->
 		player_to_string a | _ -> failwith "bug") in
-	let addTd tr str className =
-	  let td = Dom_html.createTd doc in
-	  (match className with
-		None -> ()
-	  | Some c -> td##className <- (Js.string c));
-	  Dom.appendChild td (doc##createTextNode (Js.string str));
-	  Dom.appendChild tr td in
 	let len = List.length choices in
 	let table = Dom_html.createTable doc in
 	let header = Dom_html.createDiv doc in
@@ -212,34 +251,70 @@ let print_by_player tourney player_to_string =
 		  addTd row "will play" None;
 		  addTd row "To be determined" None;
 		| _ -> failwith "bug" in
-	  Dom.appendChild container table
+	  Dom.appendChild container table;
+	  ();
 	in
 	List.iteri do_choice choices
   in
+  let checkGroupByRounds = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+  Lwt_js_events.clicks checkGroupByRounds (fun event event_loop ->
+	delete_children "container";
+	Lwt.return (print tourney player_to_string);(*
+										 cancel event_loop;
+										 print_by_group tourney player *));
+  Dom.appendChild container checkGroupByRounds;
   Array.iteri do_player by_player
 
-let oldprint_by_player tourney player_to_string =
-  let by_player = choices_per_player tourney 
-  (fun lst1 lst2 -> compare (List.length lst1) (List.length lst2)) in
+and print tourney player_to_string =
+  let doc = Dom_html.document in
+  let container = doc##body in
 
-  Array.iteri (fun i choices ->
-	let len = List.length choices in
+  let undecided = undecided_choices tourney in
+  let decided = decided_choices tourney in
+
+  List.iteri (fun i round ->
+	let header = Dom_html.createDiv doc in
+	Dom.appendChild container header;
+	(Dom.appendChild header (doc##createTextNode
+							   (Js.string
+								  (Printf.sprintf
+									 "round %d - %d decided\n" (i + 1) (List.length round)))));
+	let table = Dom_html.createTable doc in
+	Dom.appendChild container table;
+
+	List.iteri (fun i choice -> 
+	  let row = Dom_html.createTr doc in
+	  (match choice with
+	  | { player_pair = Some a, Some b; winner = Some c } ->
+		let loser = if c = a then b else a in
+		addTd row (string_of_int (i + 1)) None;
+		addTd row (player_to_string c) None;
+		addTd row "defeated" None;
+		addTd row (player_to_string loser) None;
+	  | _ -> failwith "bug");
+	  Dom.appendChild table row)
+	  round)
+	decided
+
+
+(*
+  List.iteri (fun i round ->
+	Printf.printf "round %d - %d undecided\n" (i + 1) (List.length round);
 	List.iteri (fun i choice -> 
 	  match choice with
-	  | { player_pair = Some a, Some b; winner = Some c } ->
-		Printf.printf "round %d: %s vs %s - winner: %s\n"
-		  (len - i) (player_to_string a) (player_to_string b) (player_to_string c)
-	  | _ -> failwith "bug")
-	  choices;
-  Printf.printf "\n")
-  by_player
+	  | { player_pair = Some a, Some b } ->
+		Printf.printf "  %d: %s vs %s\n" (i + 1) (player_to_string a) (player_to_string b)
+	  | { player_pair = None, Some b }->
+		Printf.printf "  %d: [] vs %s\n" (i + 1) (player_to_string b)
+	  | { player_pair = Some a, None } -> 
+		Printf.printf "  %d: [] vs %s\n" (i + 1) (player_to_string a)
+	  | _ -> Printf.printf "%d: [] vs []" (i + 1))
+	  round)
+	undecided 
 
-let to_string tourney pfunc =
-  List.fold_left (fun str player -> str ^ (pfunc player) ^ "\n")
-	"" tourney.players 
+*)
 
-let players tourney = tourney.players
-
+(*
 let print tourney player_to_string =
   let undecided = undecided_choices tourney in
   let decided = decided_choices tourney in
@@ -268,3 +343,4 @@ let print tourney player_to_string =
 	  | _ -> Printf.printf "%d: [] vs []" (i + 1))
 	  round)
 	undecided 
+*)

@@ -7,5 +7,5 @@ let play entries outcomes =
 	tourney outcomes
   in
 
-  (* Tourney.print current_state Tennis_player_entry.to_string *)
+(* Tourney.print current_state Tennis_player_entry.to_string *)
   Tourney.print_by_player current_state Tennis_player_entry.to_string
