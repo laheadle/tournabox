@@ -298,36 +298,28 @@ let print_by_round tourney player_to_string container =
 *)
 
 let show tourney player_to_string =
-  let container = 
-	let c = doc##getElementById (Js.string "container") in
-	Js.Opt.case c (fun () -> failwith "no container")
-	  (fun node -> node)
+  let container = Jsutil.getElementById_exn "container"
   in
   let checkGroupByRounds = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
   let checkGroupByPlayers = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
   let inner = Dom_html.createDiv doc in
-  (Dom.appendChild container (doc##createTextNode
-							 (Js.string "By Player")));
-  Dom.appendChild container checkGroupByPlayers;
-	checkGroupByPlayers##checked <- Js._true;
-  (Dom.appendChild container (doc##createTextNode
-							 (Js.string "By Round")));
-  Dom.appendChild container checkGroupByRounds;
-  Dom.appendChild container inner;
-  print_by_player tourney player_to_string inner;
-  Lwt_js_events.clicks checkGroupByRounds (fun event event_loop ->
+  let add elt = Dom.appendChild container elt in
+  Jsutil.textNode "By Round" |> add;
+  add checkGroupByRounds;
+  Jsutil.textNode "By Player" |> add;
+  add checkGroupByPlayers;
+  add inner;
+  print_by_round tourney player_to_string inner;
+  checkGroupByRounds##checked <- Js._true;
+  let clicks positive negative print =
+	(* toggle radio buttons *)
+	Lwt_js_events.clicks positive (fun event event_loop ->
 	delete_children inner;
-	checkGroupByPlayers##checked <- Js._false;
-	Lwt.return (print_by_round tourney player_to_string inner);(*
-										 cancel event_loop;
-										 print_by_group tourney player *));
-  Lwt_js_events.clicks checkGroupByPlayers (fun event event_loop ->
-	delete_children inner;
-	checkGroupByRounds##checked <- Js._false;
-	Lwt.return (print_by_player tourney player_to_string inner);(*
-										 cancel event_loop;
-										 print_by_group tourney player *));
-
+	negative##checked <- Js._false;
+	Lwt.return (print tourney player_to_string inner))
+  in
+  clicks checkGroupByRounds checkGroupByPlayers print_by_round;
+  clicks checkGroupByPlayers checkGroupByRounds print_by_player;
   ();
 
 
