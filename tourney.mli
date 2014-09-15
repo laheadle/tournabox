@@ -22,5 +22,5 @@ val num_players: 'a tourney -> int
 
 val won: 'a tourney -> 'a -> 'a tourney
 
-val print: 'a tourney -> ('a -> string) -> unit
-val print_by_player: 'a tourney -> ('a -> string) -> unit
+val show: 'a tourney -> ('a -> string) -> unit
+

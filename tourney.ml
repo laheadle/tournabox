@@ -191,94 +191,78 @@ let to_string tourney pfunc =
 
 let players tourney = tourney.players
 
-let delete_children str =
-  let doc = Dom_html.document##getElementById (Js.string str) in
-  Js.Opt.case doc (fun _ -> ())
-    (fun node ->
-       let children = node##childNodes in
-       for i = 0 to children##length - 1 do
-         Js.Opt.iter (node##firstChild) (fun child -> Dom.removeChild node child) ;
-       done
-    )
+let delete_children node =
+  let children = node##childNodes in
+  for i = 0 to children##length - 1 do
+    Js.Opt.iter (node##firstChild) (fun child -> Dom.removeChild node child) ;
+  done
 
 let doc = Dom_html.document
 
-let addTd tr str className =
-  let td = Dom_html.createTd doc in
-  (match className with
-	None -> ()
-  | Some c -> td##className <- (Js.string c));
-  Dom.appendChild td (doc##createTextNode (Js.string str));
-  Dom.appendChild tr td 
-
-
-let rec print_by_player tourney player_to_string =
-  let doc = Dom_html.document in
-  let container = 
-	let c = doc##getElementById (Js.string "container") in
-	Js.Opt.case c (fun () -> failwith "no container")
-	  (fun node -> node)
-  in
+let print_by_player tourney player_to_string container =
   let by_player = choices_per_player tourney 
-  ~compare_player: (fun lst1 lst2 ->
-	compare (List.length lst2) (List.length lst1)) in
+	~compare_player: (fun lst1 lst2 ->
+	  compare (List.length lst2) (List.length lst1)) in
 
-  let do_player i choices =
+  let do_player_choices i choices =
 	let player_str =
  	  (match List.hd choices with { player_pair = (Some a, _) } ->
 		player_to_string a | _ -> failwith "bug") in
 	let len = List.length choices in
-	let table = Dom_html.createTable doc in
-	let header = Dom_html.createDiv doc in
-	addTd header player_str (Some "tourney-player");
+	let table = Jsutil.table (Some "tourney-outerTable") in
+	let header = Dom_html.createTr doc in
+	Jsutil.addTd header player_str (Some "tourney-header");
 	Dom.appendChild table header;
 	let do_choice i choice =
 	  let () = match choice with
 		| { player_pair = Some a, Some b; winner = Some c } ->
 		  let outcome = if c = a then "Defeated" else "Was defeated by" in
 		  let row = Dom_html.createTr doc in	
-		  addTd row outcome
+		  Jsutil.addTd row outcome
 			(Some (if c = a then "tourney-won" else "tourney-lost"));
-		  addTd row (player_to_string b) None;
-		  addTd row ("In round " ^ (string_of_int (len - i))) None;
+		  Jsutil.addTd row (player_to_string b) None;
+		  Jsutil.addTd row ("In round " ^ (string_of_int (len - i))) None;
 		  Dom.appendChild table row
 		| { player_pair = Some a, Some b; winner = None } ->
 		  let row = Dom_html.createTr doc in	
-		  addTd row "will play" None;
-		  addTd row (player_to_string b) None;
+		  Jsutil.addTd row "will play" None;
+		  Jsutil.addTd row (player_to_string b) None;
 		| { player_pair = Some a, None; winner = None } ->
 		  let row = Dom_html.createTr doc in	
-		  addTd row "will play" None;
-		  addTd row "To be determined" None;
+		  Jsutil.addTd row "will play" None;
+		  Jsutil.addTd row "To be determined" None;
 		| _ -> failwith "bug" in
 	  Dom.appendChild container table;
 	  ();
 	in
 	List.iteri do_choice choices
   in
-  let checkGroupByRounds = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-  Lwt_js_events.clicks checkGroupByRounds (fun event event_loop ->
-	delete_children "container";
-	Lwt.return (print tourney player_to_string);(*
-										 cancel event_loop;
-										 print_by_group tourney player *));
-  Dom.appendChild container checkGroupByRounds;
-  Array.iteri do_player by_player
+  Array.iteri do_player_choices by_player
 
-and print tourney player_to_string =
-  let doc = Dom_html.document in
-  let container = doc##body in
-
+let print_by_round tourney player_to_string container =
   let undecided = undecided_choices tourney in
-  let decided = decided_choices tourney in
+  let decided = List.rev (decided_choices tourney) in
+  let num_rounds = List.length decided in
 
   List.iteri (fun i round ->
-	let header = Dom_html.createDiv doc in
-	Dom.appendChild container header;
-	(Dom.appendChild header (doc##createTextNode
-							   (Js.string
-								  (Printf.sprintf
-									 "round %d - %d decided\n" (i + 1) (List.length round)))));
+	let table = Jsutil.table (Some "tourney-outerTable tourney-header") in
+	let header = Dom_html.createTr doc in
+	Jsutil.addTd header
+	  (if i = 0 then
+		  "Finals\n"
+			else
+		  (if i = 1 then
+			  "Semifinals"
+		   else
+			  (if i = 2 then
+				  "Quarterfinals"
+			   else
+				  Printf.sprintf
+					"Round %d (%d matches)" (num_rounds - i) (List.length round))))
+	  (Some "tourney-player");
+	Dom.appendChild table header;
+	Dom.appendChild container table;
+
 	let table = Dom_html.createTable doc in
 	Dom.appendChild container table;
 
@@ -287,10 +271,9 @@ and print tourney player_to_string =
 	  (match choice with
 	  | { player_pair = Some a, Some b; winner = Some c } ->
 		let loser = if c = a then b else a in
-		addTd row (string_of_int (i + 1)) None;
-		addTd row (player_to_string c) None;
-		addTd row "defeated" None;
-		addTd row (player_to_string loser) None;
+		Jsutil.addTd row (player_to_string c) None;
+		Jsutil.addTd row "defeated" (Some "tourney-won");
+		Jsutil.addTd row (player_to_string loser) None;
 	  | _ -> failwith "bug");
 	  Dom.appendChild table row)
 	  round)
@@ -313,6 +296,40 @@ and print tourney player_to_string =
 	undecided 
 
 *)
+
+let show tourney player_to_string =
+  let container = 
+	let c = doc##getElementById (Js.string "container") in
+	Js.Opt.case c (fun () -> failwith "no container")
+	  (fun node -> node)
+  in
+  let checkGroupByRounds = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+  let checkGroupByPlayers = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+  let inner = Dom_html.createDiv doc in
+  (Dom.appendChild container (doc##createTextNode
+							 (Js.string "By Player")));
+  Dom.appendChild container checkGroupByPlayers;
+	checkGroupByPlayers##checked <- Js._true;
+  (Dom.appendChild container (doc##createTextNode
+							 (Js.string "By Round")));
+  Dom.appendChild container checkGroupByRounds;
+  Dom.appendChild container inner;
+  print_by_player tourney player_to_string inner;
+  Lwt_js_events.clicks checkGroupByRounds (fun event event_loop ->
+	delete_children inner;
+	checkGroupByPlayers##checked <- Js._false;
+	Lwt.return (print_by_round tourney player_to_string inner);(*
+										 cancel event_loop;
+										 print_by_group tourney player *));
+  Lwt_js_events.clicks checkGroupByPlayers (fun event event_loop ->
+	delete_children inner;
+	checkGroupByRounds##checked <- Js._false;
+	Lwt.return (print_by_player tourney player_to_string inner);(*
+										 cancel event_loop;
+										 print_by_group tourney player *));
+
+  ();
+
 
 (*
 let print tourney player_to_string =
