@@ -133,6 +133,35 @@ let filter_choices tourney (fn: ichoice -> bool) =
   in
   List.map filter (Array.to_list tourney.rounds)
 
+let filter_choices_paired tourney fn1 fn2 =
+  let mapper round =
+	let filter fn =
+	  List.filter 
+		fn
+		(Array.to_list round) in
+	let tochoices ichoices =
+	  List.map
+		(fun ic -> choice_of_ichoice ic tourney)
+		ichoices
+	in
+	let ichoices1 = filter fn1 in
+	let ichoices2 = filter fn2 in
+	(tochoices ichoices1, tochoices ichoices2)
+  in
+  List.map mapper (Array.to_list tourney.rounds)
+
+let nonempty_choices tourney =
+  let undecided =
+	function { iplayer_pair = None, None ; _ } -> false
+	| { winner = Some _ } -> false
+	| _ -> true
+  in
+  let decided =
+	function { winner = Some _ } -> true
+	| _ -> false
+	in
+  filter_choices_paired tourney undecided decided
+
 let undecided_choices tourney =
   filter_choices tourney
 	(function { iplayer_pair = None, None ; _ } -> false
@@ -168,22 +197,6 @@ let choices_per_player tourney ~compare_player =
   done;
   Array.sort compare_player choices;
   choices
-
-let oldprint_by_player tourney player_to_string =
-  let by_player = choices_per_player tourney 
-  (fun lst1 lst2 -> compare (List.length lst1) (List.length lst2)) in
-
-  Array.iteri (fun i choices ->
-	let len = List.length choices in
-	List.iteri (fun i choice -> 
-	  match choice with
-	  | { player_pair = Some a, Some b; winner = Some c } ->
-		Printf.printf "round %d: %s vs %s - winner: %s\n"
-		  (len - i) (player_to_string a) (player_to_string b) (player_to_string c)
-	  | _ -> failwith "bug")
-	  choices;
-  Printf.printf "\n")
-  by_player
 
 let to_string tourney pfunc =
   List.fold_left (fun str player -> str ^ (pfunc player) ^ "\n")
@@ -239,18 +252,19 @@ let print_by_player tourney player_to_string container =
   in
   Array.iteri do_player_choices by_player
 
-let print_by_round tourney player_to_string container =
-  let undecided = undecided_choices tourney in
-  let decided = List.rev (decided_choices tourney) in
-  let num_rounds = List.length decided in
+let print_by_round tourney player_to_string outer_container =
+  let nonempty = List.rev (nonempty_choices tourney) in
+  let num_rounds = List.length nonempty in
 
-  List.iteri (fun i round ->
-	let table = Jsutil.table (Some "tourney-outerTable tourney-header") in
+  let container = Jsutil.table None in
+  Dom.appendChild outer_container container;
+
+  let iter i (undecided, decided) =
 	let header = Dom_html.createTr doc in
 	Jsutil.addTd header
 	  (if i = 0 then
 		  "Finals\n"
-			else
+	   else
 		  (if i = 1 then
 			  "Semifinals"
 		   else
@@ -258,15 +272,13 @@ let print_by_round tourney player_to_string container =
 				  "Quarterfinals"
 			   else
 				  Printf.sprintf
-					"Round %d (%d matches)" (num_rounds - i) (List.length round))))
-	  (Some "tourney-player");
-	Dom.appendChild table header;
-	Dom.appendChild container table;
+					"Round %d (%d matches)"
+					(num_rounds - i)
+					(List.length undecided + List.length decided))))
+	  (Some "tourney-header");
+	Dom.appendChild container header;
 
-	let table = Dom_html.createTable doc in
-	Dom.appendChild container table;
-
-	List.iteri (fun i choice -> 
+	let riter i choice = 
 	  let row = Dom_html.createTr doc in
 	  (match choice with
 	  | { player_pair = Some a, Some b; winner = Some c } ->
@@ -274,10 +286,24 @@ let print_by_round tourney player_to_string container =
 		Jsutil.addTd row (player_to_string c) None;
 		Jsutil.addTd row "defeated" (Some "tourney-won");
 		Jsutil.addTd row (player_to_string loser) None;
-	  | _ -> failwith "bug");
-	  Dom.appendChild table row)
-	  round)
-	decided
+	  | { player_pair = Some a, Some b; winner = None } ->
+		Jsutil.addTd row (player_to_string a) None;
+		Jsutil.addTd row "will face" (Some "tourney-willFace");
+		Jsutil.addTd row (player_to_string b) None;
+	  | { player_pair = Some a, None; _ } ->
+		Jsutil.addTd row (player_to_string a) None;
+		Jsutil.addTd row "will face" (Some "tourney-willFace");
+		Jsutil.addTd row "(To be decided)" None;
+	  | _ ->
+		failwith "bug 4");
+	  Dom.appendChild container row in
+	let emptyRow = Dom_html.createTr doc in
+	Jsutil.addTd emptyRow " " None;
+	List.iteri riter undecided;
+	List.iteri riter decided;
+	Dom.appendChild container emptyRow
+  in
+  List.iteri iter nonempty
 
 
 (*
@@ -303,11 +329,15 @@ let show tourney player_to_string =
   let checkGroupByRounds = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
   let checkGroupByPlayers = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
   let inner = Dom_html.createDiv doc in
+  let top = Dom_html.createDiv doc in
   let add elt = Dom.appendChild container elt in
-  Jsutil.textNode "By Round" |> add;
-  add checkGroupByRounds;
-  Jsutil.textNode "By Player" |> add;
-  add checkGroupByPlayers;
+  let addTop elt = Dom.appendChild top elt in
+  top##className <- (Js.string "tourney-menuDiv");
+  add top;
+  Jsutil.textNode "By Round" |> addTop;
+  addTop checkGroupByRounds;
+  Jsutil.textNode "By Player" |> addTop;
+  addTop checkGroupByPlayers;
   add inner;
   print_by_round tourney player_to_string inner;
   checkGroupByRounds##checked <- Js._true;
@@ -318,38 +348,7 @@ let show tourney player_to_string =
 	negative##checked <- Js._false;
 	Lwt.return (print tourney player_to_string inner))
   in
-  clicks checkGroupByRounds checkGroupByPlayers print_by_round;
-  clicks checkGroupByPlayers checkGroupByRounds print_by_player;
-  ();
+  ignore (clicks checkGroupByRounds checkGroupByPlayers print_by_round);
+  ignore (clicks checkGroupByPlayers checkGroupByRounds print_by_player)
 
 
-(*
-let print tourney player_to_string =
-  let undecided = undecided_choices tourney in
-  let decided = decided_choices tourney in
-
-  List.iteri (fun i round ->
-	Printf.printf "round %d - %d decided\n" (i + 1) (List.length round);
-	List.iteri (fun i choice -> 
-	  match choice with
-	  | { player_pair = Some a, Some b; winner = Some c } ->
-		Printf.printf "  %d: %s vs %s - winner: %s\n"
-		  (i + 1) (player_to_string a) (player_to_string b) (player_to_string c)
-	  | _ -> failwith "bug")
-	  round)
-	decided; 
-
-  List.iteri (fun i round ->
-	Printf.printf "round %d - %d undecided\n" (i + 1) (List.length round);
-	List.iteri (fun i choice -> 
-	  match choice with
-	  | { player_pair = Some a, Some b } ->
-		Printf.printf "  %d: %s vs %s\n" (i + 1) (player_to_string a) (player_to_string b)
-	  | { player_pair = None, Some b }->
-		Printf.printf "  %d: [] vs %s\n" (i + 1) (player_to_string b)
-	  | { player_pair = Some a, None } -> 
-		Printf.printf "  %d: [] vs %s\n" (i + 1) (player_to_string a)
-	  | _ -> Printf.printf "%d: [] vs []" (i + 1))
-	  round)
-	undecided 
-*)
