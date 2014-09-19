@@ -17,8 +17,8 @@ let index_of_player player tourney =
   in
   find 0 tourney.players
 
-let player_of_index (index: int) (tourney:'player tourney) =
-  let rec find i (lst:'player list) =
+let player_of_index index tourney =
+  let rec find i lst =
 	match lst with
 	  [] -> raise (Invalid_argument "player not found")
 	| hd :: tl -> 
@@ -27,8 +27,8 @@ let player_of_index (index: int) (tourney:'player tourney) =
   in
   find 0 tourney.players
 
-let choice_of_ichoice { iplayer_pair=(p1,p2); winner } (tourney: 'player tourney) =
-  let convert (opt: int option) = match opt with
+let choice_of_ichoice { iplayer_pair=(p1,p2); winner } tourney =
+  let convert opt = match opt with
 	  None -> None 
 	| Some pi -> Some (player_of_index pi tourney)
   in
