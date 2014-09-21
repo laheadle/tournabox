@@ -1,26 +1,34 @@
 
-type 'a choice = {
-  entry_pair : 'a option * 'a option;
-  winner : 'a option;
-}
+module type S = sig
+  type e
 
-type 'a round_in_progress = 'a choice list
+  type choice = {
+	entry_pair : e option * e option;
+	winner : e option;
+  }
 
-type 'a tourney
+  type round_in_progress = choice list
 
-val init : 'a list -> 'a tourney
+  type tourney
 
-val num_rounds: 'a tourney -> int
+  val init : e list -> tourney
 
-val undecided_choices: 'a tourney -> 'a round_in_progress list
-val decided_choices: 'a tourney -> 'a round_in_progress list
+  val num_rounds: tourney -> int
 
-val to_string: 'a tourney -> ('a -> string) -> string
+  val undecided_choices: tourney -> round_in_progress list
+  val decided_choices: tourney -> round_in_progress list
 
-val entries: 'a tourney -> 'a list
-val num_entries: 'a tourney -> int
+  val entries: tourney -> e list
+  val num_entries: tourney -> int
 
-val won: 'a tourney -> 'a -> 'a tourney
+  val won: tourney -> e -> tourney
+  val won_str : tourney -> string -> tourney
 
-val show: 'a tourney -> ('a -> string) -> unit
+  val show: tourney -> unit
+  val play: e list -> string list -> unit
+end
+
+module Make:
+  functor (E: Entry.S) ->
+      S with type e = E.t
 

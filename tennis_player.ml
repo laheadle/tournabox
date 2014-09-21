@@ -260,24 +260,18 @@ let women = [
 "HALEP, Simona ROU";
 ]
 
-type gender = 
-  Male | Female
 
-type t = { name: string; country: string; gender: gender }
 
-let parse gender str =
-  let len = String.length str in
-(*  Printf.printf "%s\n" str;*)
-  let country = String.sub str (len - 3) 3 in
-(*  Printf.printf "%s\n" country;*)
-  let name = String.sub str 0 (len - 3) in
-  (*Printf.printf "%s\n" name;*)
-  { name = name; country = country; gender = gender }
+module M: Player.S = Player.Make(
+  struct
+	type t = { name: string; country: string }
 
-type db = t list
+	let of_string str =
+	  let len = String.length str in
+	  let country = String.sub str (len - 3) 3 in
+	  let name = String.sub str 0 (len - 3) in
+	  { name = name; country = country }
 
-let make_db () =
-  List.append (List.map (parse Male) men) (List.map (parse Female) women)
-
-let pick str db =
-  Util.pick db str (fun x -> x.name ^ " " ^ x.country)
+	let to_string x = x.name ^ " " ^ x.country
+  end
+)

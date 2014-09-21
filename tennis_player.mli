@@ -1,11 +1,6 @@
 
-type gender = 
-  Male | Female
+module M: Player.S
 
-type t = { name: string; country: string; gender: gender }
+val women: string list
 
-type db
-
-val make_db: unit -> db
-
-val pick: string -> db -> t
+val men: string list
