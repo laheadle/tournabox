@@ -37,11 +37,22 @@ let log base n =
   iter 1 base
 
 let contains s1 s2 =
-  let re = Regexp.regexp_string s2
+  (* Steps backward from the end *)
+  let rec is_at pos i =
+	if not (s1.[pos + i] = s2.[i]) then false
+	else if i = 0 then true
+	else is_at pos (i -1)
   in
-  match Regexp.search_forward re s1 0 with
-	None -> false
-  | _ -> true
+  let rec try_all pos =
+	if is_at pos (String.length s2 - 1) then
+	  true
+	else if pos = 0 then false
+	else try_all (pos - 1)
+  in
+  let start = String.length s1 - String.length s2 in
+  if start < 0 then false
+  else try_all start
+
 
 let pick list partial to_string =
   let up = String.uppercase in
