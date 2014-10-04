@@ -1,5 +1,5 @@
 
-let women_usopen_2014 = [
+let entries = [
 "WILLIAMS, Serena USA [1]";
 "TOWNSEND, Taylor USA (W)";
 "SCHIAVONE, Francesca ITA";
@@ -131,7 +131,7 @@ let women_usopen_2014 = [
 ]
 
 
-let outcomes_women_usopen_2014 = [
+let outcomes = [
 "WILLIAMS, s";
 "KING";
 "LEPCHENKO";
@@ -261,11 +261,7 @@ let outcomes_women_usopen_2014 = [
 "williams, s"*)
 ]
 
-module Entry = Entry.Make(Tennis_player.M)
-module Tourney = Tourney.Make(Entry)
+module Tourney = Tourney.Make(WTA.M)
 
-let db = Tennis_player.M.make_db (Tennis_player.women) in
-let entries = Entry.make_entries db women_usopen_2014 in
-
-Tourney.play entries outcomes_women_usopen_2014
+Tourney.play entries outcomes
 

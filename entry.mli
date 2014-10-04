@@ -1,12 +1,10 @@
 
-module type S =
-  sig
-	type t
-	type db
-	val to_string: t -> string
-	val make_entries: db -> string list -> t list
-  end
+module Make: functor (Player: Player.S) ->
+sig
+  type t
+  type data
+  val to_string: t -> string
+  val make: Player.t -> data -> t
+  val parse: string -> (string * data)
+end
 
-module Make:
-  functor (Player: Player.S) ->
-      S with type db = Player.db

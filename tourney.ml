@@ -11,8 +11,6 @@ module type S = sig
 
   type tourney
 
-  val init : e list -> tourney
-
   val num_rounds: tourney -> int
 
   val undecided_choices: tourney -> round_in_progress list
@@ -21,14 +19,12 @@ module type S = sig
   val entries: tourney -> e list
   val num_entries: tourney -> int
 
-  val won: tourney -> e -> tourney
-  val won_str : tourney -> string -> tourney
-
-  val show: tourney -> unit
-  val play: e list -> string list -> unit
+  val play: entries:string list -> outcomes:string list -> unit
 end
 
-module Make(Entry: Entry.S) = struct
+module Make(League: League.S) = struct
+
+  module Entry = Entry.Make(League.Player)
 
   type e = Entry.t
   type choice = {
@@ -392,9 +388,14 @@ module Make(Entry: Entry.S) = struct
 	ignore (clicks checkGroupByRounds checkGroupByEntries print_by_round);
 	ignore (clicks checkGroupByEntries checkGroupByRounds print_by_entry)
 
-
-
-  let play entries outcomes =
+  let play ~entries ~outcomes =
+	let db = League.make_db () in
+	let make_entry str =
+	  let (player_str, data) = Entry.parse str in
+	  let player = League.pick player_str db in
+	  Entry.make player data
+	in	
+	let entries = List.map make_entry entries in
 	let tourney = init entries in
 	let current_state = List.fold_left won_str tourney outcomes in
 

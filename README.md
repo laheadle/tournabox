@@ -1,30 +1,33 @@
 
+tourney - league, entry
+league - player
+entry - player
 
-src/lib/*.ml
-src/tourneys/year/
- -tourney_name.ml
+DISTRIBUTION
+============
 
-html/tourneys/year/
- -tourney_name.html
- -tourney_name.js
+src/lib/
+ - core tourney, entry files
+
+src/tennis
+ - Tennis Player DB
+
+src/tennis/tourneys/us_open
+ -2014.ml
+
+html/tourneys/us_open
+ -2014.js
 
 ---
 
-html/players/djok.html
-html/tourneys/year/usopen.html
-html/tourneys/year/djok.html
-
-- Is a table per tourney useful?
-- Is a complete player history useful?
-- Or a complete queryable decision history?
-
-levels: tourney [name, year], round[number], decision[entries, winner,loser], entry[seed], player[name, country, gender]
+levels: tourney [name, date], round[number], decision[date, entries, winner,loser], entry[seed], player[name, country, gender]
 
 most important ops:
 
-1 - group by: player (seed, name ascending) or round (descending)
-2 - name filter
-3 - country filter
+1 - group by: player (performance descending) or round (descending)
+2 - filter (name or country)?
+3 - group by country
+4 - (seed, name ascending)
 
 columns
 

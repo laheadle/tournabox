@@ -1,4 +1,4 @@
-let men_usopen_2014 =
+let entries =
    [
 "DJOKOVIC, Novak SRB [1]";
 "SCHWARTZMAN, Diego ARG";
@@ -129,9 +129,8 @@ let men_usopen_2014 =
 "MATOSEVIC, Marinko AUS";
 "FEDERER, Roger SUI [2]"
 ]
-in
 
-let outcomes_men_usopen_2014 = [
+let outcomes = [
   "DJOKOVIC";
   "mathieu";
   "Djokovic";
@@ -261,9 +260,8 @@ let outcomes_men_usopen_2014 = [
 "CILIC, Mari";
 "CILIC, Mari";
 ]
-in
 
-let db = Tennis_player.make_db () in
+module Tourney = Tourney.Make(ATP.M)
 
-Play_tennis.play (Tennis_events.make_entries db men_usopen_2014) outcomes_men_usopen_2014
+Tourney.play entries outcomes
 
