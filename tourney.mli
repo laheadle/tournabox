@@ -13,9 +13,6 @@ module type S = sig
 
   val num_rounds: tourney -> int
 
-  val undecided_choices: tourney -> round_in_progress list
-  val decided_choices: tourney -> round_in_progress list
-
   val entries: tourney -> e list
   val num_entries: tourney -> int
 

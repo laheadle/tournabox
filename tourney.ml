@@ -13,9 +13,6 @@ module type S = sig
 
   val num_rounds: tourney -> int
 
-  val undecided_choices: tourney -> round_in_progress list
-  val decided_choices: tourney -> round_in_progress list
-
   val entries: tourney -> e list
   val num_entries: tourney -> int
 
@@ -205,17 +202,6 @@ module Make(League: League.S) = struct
 	in
 	filter_choices_paired tourney undecided decided
 
-  let undecided_choices tourney =
-	filter_choices tourney
-	  (function { ientry_pair = None, None ; _ } -> false
-	  | { winner = Some _ } -> false
-	  | _ -> true)
-
-  let decided_choices tourney =
-	filter_choices tourney
-	  (function { winner = Some _ } -> true
-	  | _ -> false)
-
   let num_entries tourney = List.length tourney.entries
 
   let choices_per_entry tourney ~compare_entry =
@@ -315,7 +301,7 @@ module Make(League: League.S) = struct
 		(Some "tourney-header");
 	  Dom.appendChild container header;
 
-	  let riter i choice = 
+	  let add_choice_row i choice = 
 		let row = Dom_html.createTr doc in
 		(match choice with
 		| { entry_pair = Some a, Some b; winner = Some c } ->
@@ -336,8 +322,8 @@ module Make(League: League.S) = struct
 		Dom.appendChild container row in
 	  let emptyRow = Dom_html.createTr doc in
 	  Jsutil.addTd emptyRow " " None;
-	  List.iteri riter undecided;
-	  List.iteri riter decided;
+	  List.iteri add_choice_row undecided;
+	  List.iteri add_choice_row decided;
 	  Dom.appendChild container emptyRow
 	in
 	List.iteri iter nonempty

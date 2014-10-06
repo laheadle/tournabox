@@ -7,9 +7,9 @@ endef
 
 
 js:
-	ocamlbuild -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o women_usopen_2014.byte
+	ocamlbuild -cflag -annot -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o women_usopen_2014.byte
 	js_of_ocaml women_usopen_2014.byte
-	ocamlbuild -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o men_usopen_2014.byte
+	ocamlbuild -cflag -annot -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o men_usopen_2014.byte
 	js_of_ocaml men_usopen_2014.byte
 
 all:

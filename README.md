@@ -1,8 +1,3 @@
-
-tourney - league, entry
-league - player
-entry - player
-
 DISTRIBUTION
 ============
 
@@ -25,9 +20,10 @@ levels: tourney [name, date], round[number], decision[date, entries, winner,lose
 most important ops:
 
 1 - group by: player (performance descending) or round (descending)
-2 - filter (name or country)?
-3 - group by country
-4 - (seed, name ascending)
+2 - filter by name 
+3 - group by Player.country
+3 - filter by country
+3 - group by (seed, name ascending)
 
 columns
 
