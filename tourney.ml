@@ -1,13 +1,9 @@
+module C = Choice
 
 module type S = sig
   type e
 
-  type choice = {
-	entry_pair : e option * e option;
-	winner : e option;
-  }
-
-  type round_in_progress = choice list
+  type round_in_progress = e Choice.t list
 
   type tourney
 
@@ -24,19 +20,10 @@ module Make(League: League.S) = struct
   module Entry = Entry.Make(League.Player)
 
   type e = Entry.t
-  type choice = {
-	entry_pair: Entry.t option * Entry.t option;
-	winner: Entry.t option
-  }
-	
-  type ichoice = {
-	ientry_pair: int option * int option;
-	winner: int option
-  }
 
-  type round =  ichoice array
+  type round =  int Choice.t array
   type tourney = { rounds: round array; entries: Entry.t list }
-  type round_in_progress = choice list
+  type round_in_progress = e Choice.t list
 
   let index_of_entry entry tourney =
 	let rec find i lst =
@@ -58,12 +45,8 @@ module Make(League: League.S) = struct
 	in
 	find 0 tourney.entries
 
-  let choice_of_ichoice { ientry_pair=(p1,p2); winner } tourney =
-	let convert opt = match opt with
-		None -> None 
-	  | Some pi -> Some (entry_of_index pi tourney)
-	in
-	{ entry_pair = (convert p1, convert p2); winner = convert winner }
+  let choice_of_ichoice ichoice tourney =
+	C.map (fun i -> entry_of_index i tourney) ichoice
 
   let num_rounds tourney =
 	Array.length tourney.rounds
@@ -73,16 +56,23 @@ module Make(League: League.S) = struct
 	Printf.printf "#entries: %d\n" len;
 	let num_rounds = if Util.power_of_two len then Util.log 2 len
 	  else raise (Invalid_argument "entry length not a power of 2") in
-	let empty_ichoice: ichoice = { ientry_pair=(None,None); winner=None } in
+	let empty_ichoice ~(round: int) = {
+	  C.entry_pair=(None,None);
+	  winner=None;
+	  round = round;
+	  position = 0;
+	} in
 	let init_round i =
-	  Array.make (Util.pow 2 (num_rounds - i - 1)) empty_ichoice in
+	  Array.make (Util.pow 2 (num_rounds - i - 1))
+		(empty_ichoice ~round:i) in
 	let init_first tourney = 
 	  let round = tourney.rounds.(0) in
 	  for i = 0 to Array.length round - 1 do
 		let p1 =  i * 2 in
 		let p2 =  i * 2 + 1 in
 		Util.replace round i (fun ichoice ->
-		  { ichoice with ientry_pair=(Some p1, Some p2) })
+		  { ichoice with C.entry_pair=(Some p1, Some p2);
+			position = p1 })
 	  done
 	in
 	let tourney = { 
@@ -123,7 +113,7 @@ module Make(League: League.S) = struct
 	let choices = List.map2 nth (Array.to_list tourney.rounds) path in
 	let rec find lst = match lst with
 	  | [] -> raise (Invalid_argument "no games to win")
-	  | { ientry_pair = (Some x, Some y); winner = None } :: tl
+	  | { C.entry_pair = (Some x, Some y); winner = None } :: tl
 		-> if x = entry then y else x
 	  | hd :: tl -> find tl
 	in
@@ -136,15 +126,18 @@ module Make(League: League.S) = struct
 	  let (playedRound, winI) = path_intersect winpath losepath in
 	  let nextI = next_position winI in
 	  Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
-		{ playedChoice with winner = Some winner });
+		{ playedChoice with C.winner = Some winner });
 	  if playedRound < num_rounds tourney - 1 then
-		let schedule nextChoice = match nextChoice with
-			{ ientry_pair = (p1, _p2) ; _ } ->
+		let schedule nextChoice =
+		  let to_play =
+			match nextChoice with
+			{ C.entry_pair = (p1, _p2) ; _ } ->
 			  assert (_p2 = None);
 			  if p1 = None then
-				{ nextChoice with ientry_pair = (Some winner, None) }
+				{ nextChoice with C.entry_pair = (Some winner, None) }
 			  else
-				{ nextChoice with ientry_pair = (p1, Some winner) }
+				{ nextChoice with C.entry_pair = (p1, Some winner) } in
+		  { to_play with C.position = nextI }
 		in
 		Util.replace (tourney.rounds.(playedRound + 1)) nextI schedule
 	  else
@@ -161,71 +154,46 @@ module Make(League: League.S) = struct
 	in
 	won tourney entry
 
-  let filter_choices tourney (fn: ichoice -> bool) =
-	let filter round =
-	  let ichoices = List.filter 
-		fn
-		(Array.to_list round)
-	  in
-	  List.map (fun ic ->
-		choice_of_ichoice ic tourney)
-		ichoices
-	in
-	List.map filter (Array.to_list tourney.rounds)
-
-  let filter_choices_paired tourney fn1 fn2 =
-	let mapper round =
-	  let filter fn =
-		List.filter 
-		  fn
-		  (Array.to_list round) in
-	  let tochoices ichoices =
-		List.map
-		  (fun ic -> choice_of_ichoice ic tourney)
-		  ichoices
-	  in
-	  let ichoices1 = filter fn1 in
-	  let ichoices2 = filter fn2 in
-	  (tochoices ichoices1, tochoices ichoices2)
-	in
-	List.map mapper (Array.to_list tourney.rounds)
-
-  let nonempty_choices tourney =
-	let undecided =
-	  function { ientry_pair = None, None ; _ } -> false
-	  | { winner = Some _ } -> false
-	  | _ -> true
-	in
-	let decided =
-	  function { winner = Some _ } -> true
-	  | _ -> false
-	in
-	filter_choices_paired tourney undecided decided
-
   let num_entries tourney = List.length tourney.entries
 
-  let choices_per_entry tourney ~compare_entry =
-	let choices = Array.make (num_entries tourney) [] in
-	let replace k ic =
-	  Util.replace choices k (fun lst ->
-		(choice_of_ichoice ic tourney)  :: lst) in
+  let select_grouped group_spec tourney =
+	let make_choices () = ref [] in
+	let choices = make_choices () in
+	let convert ichoice = choice_of_ichoice ichoice tourney in
+	let rec add_choice_iter choice lst =
+	  match lst with [] -> [[choice]]
+	  | hd :: tl -> 
+		let group_result = group_spec.Entry.in_group choice hd in
+		if group_result.League.Player.quit then lst
+		else
+		  if group_result.League.Player.this_group then (choice :: hd) :: tl
+		  else
+			hd :: (add_choice_iter choice tl)
+	in
+	let add_choice ichoice =
+	  choices :=
+		add_choice_iter
+		(group_spec.Entry.convert (convert ichoice))
+		!choices
+	in
 	for i = 0 to Array.length tourney.rounds - 1 do
 	  let round = tourney.rounds.(i) in
 	  for i = 0 to Array.length round - 1 do
 		match round.(i) with
-		  { ientry_pair = (Some k, Some j) } as ichoice ->
-			replace k ichoice;
+		  { C.entry_pair = (Some k, Some j) } as ichoice ->
+			add_choice ichoice;
 		  (* Make sure the reference entry comes first *)
-			replace j { ichoice with ientry_pair = ( Some j, Some k ) };
-		| { ientry_pair = (None, Some k) } as ichoice ->
-		  replace k { ichoice with ientry_pair = ( Some k, None ) };
-		| { ientry_pair = (Some k, None) } as ichoice ->
-		  replace k ichoice;
+			add_choice { ichoice with C.entry_pair = ( Some j, Some k ) };
+		| { C.entry_pair = (None, Some k) } as ichoice ->
+		  add_choice { ichoice with C.entry_pair = ( Some k, None ) };
+		| { C.entry_pair = (Some k, None) } as ichoice ->
+		  add_choice ichoice;
 		| _ -> (); (* skip empties *)
 	  done
 	done;
-	Array.sort compare_entry choices;
-	choices
+	List.sort
+	  group_spec.Entry.compare_group
+	  (List.map (List.sort group_spec.Entry.compare_choice) !choices)
 
   let delete_children node =
 	let children = node##childNodes in
@@ -235,144 +203,211 @@ module Make(League: League.S) = struct
 
   let doc = Dom_html.document
 
-  let print_by_entry tourney container =
-	let by_entry = choices_per_entry tourney 
-	  ~compare_entry: (fun lst1 lst2 ->
-		compare (List.length lst2) (List.length lst1)) in
-
-	let do_entry_choices i choices =
-	  let entry_str =
- 		(match List.hd choices with { entry_pair = (Some a, _) } ->
-		  Entry.to_string a | _ -> failwith "bug") in
-	  let len = List.length choices in
+  let render_groups tourney container groups grouping_spec =
+	let num_rounds = num_rounds tourney in
+	let do_choices groupi choices =
+	  let num_choices = List.length choices in
+	  let header_str =
+		grouping_spec.Entry.header_name num_rounds groupi choices in
 	  let table = Jsutil.table (Some "tourney-outerTable") in
 	  let header = Dom_html.createTr doc in
-	  Jsutil.addTd header entry_str (Some "tourney-header");
+	  Jsutil.addTd header header_str (Some "tourney-header");
 	  Dom.appendChild table header;
 	  let do_choice i choice =
-		let () = match choice with
-		  | { entry_pair = Some a, Some b; winner = Some c } ->
-			let outcome = if c = a then "Defeated" else "Was defeated by" in
-			let row = Dom_html.createTr doc in	
-			Jsutil.addTd row outcome
-			  (Some (if c = a then "tourney-won" else "tourney-lost"));
-			Jsutil.addTd row (Entry.to_string b) None;
-			Jsutil.addTd row ("In round " ^ (string_of_int (len - i))) None;
-			Dom.appendChild table row
-		  | { entry_pair = Some a, Some b; winner = None } ->
-			let row = Dom_html.createTr doc in	
-			Jsutil.addTd row "will play" None;
-			Jsutil.addTd row (Entry.to_string b) None;
-		  | { entry_pair = Some a, None; winner = None } ->
-			let row = Dom_html.createTr doc in	
-			Jsutil.addTd row "will play" None;
-			Jsutil.addTd row "To be determined" None;
-		  | _ -> failwith "bug" in
-		Dom.appendChild container table;
-		();
-	  in
-	  List.iteri do_choice choices
-	in
-	Array.iteri do_entry_choices by_entry
-
-  let print_by_round tourney outer_container =
-	let nonempty = List.rev (nonempty_choices tourney) in
-	let num_rounds = List.length nonempty in
-
-	let container = Jsutil.table None in
-	Dom.appendChild outer_container container;
-
-	let iter i (undecided, decided) =
-	  let header = Dom_html.createTr doc in
-	  Jsutil.addTd header
-		(if i = 0 then
-			"Finals\n"
-		 else
-			(if i = 1 then
-				"Semifinals"
-			 else
-				(if i = 2 then
-					"Quarterfinals"
-				 else
-					Printf.sprintf
-					  "Round %d (%d matches)"
-					  (num_rounds - i)
-					  (List.length undecided + List.length decided))))
-		(Some "tourney-header");
-	  Dom.appendChild container header;
-
-	  let add_choice_row i choice = 
 		let row = Dom_html.createTr doc in
-		(match choice with
-		| { entry_pair = Some a, Some b; winner = Some c } ->
-		  let loser = if c = a then b else a in
-		  Jsutil.addTd row (Entry.to_string c) None;
-		  Jsutil.addTd row "defeated" (Some "tourney-won");
-		  Jsutil.addTd row (Entry.to_string loser) None;
-		| { entry_pair = Some a, Some b; winner = None } ->
-		  Jsutil.addTd row (Entry.to_string a) None;
-		  Jsutil.addTd row "will face" (Some "tourney-willFace");
-		  Jsutil.addTd row (Entry.to_string b) None;
-		| { entry_pair = Some a, None; _ } ->
-		  Jsutil.addTd row (Entry.to_string a) None;
-		  Jsutil.addTd row "will face" (Some "tourney-willFace");
-		  Jsutil.addTd row "(To be decided)" None;
-		| _ ->
-		  failwith "bug 4");
-		Dom.appendChild container row in
-	  let emptyRow = Dom_html.createTr doc in
-	  Jsutil.addTd emptyRow " " None;
-	  List.iteri add_choice_row undecided;
-	  List.iteri add_choice_row decided;
-	  Dom.appendChild container emptyRow
+		let columns =
+		  grouping_spec.Entry.column_extractor num_choices i choice in
+		List.iter (fun (col, clss) -> Jsutil.addTd row col clss) columns;
+		Dom.appendChild table row
+	  in
+	  List.iteri do_choice choices;
+	  Dom.appendChild container table
 	in
-	List.iteri iter nonempty
+	List.iteri do_choices groups
 
+  let contains_player lst player =
+	let rec contains_iter = function
+	  | [] -> false
+	  | hd :: tl ->
+		let head_matches =
+		  match hd with
+			{ C.entry_pair = (Some a, Some b) } ->
+			  a = player || b = player
+		  |	{ C.entry_pair = (Some a, None) } ->
+			a = player
+		  | { C.entry_pair = (None, Some b) } ->
+			b = player
+		  | { C.entry_pair = (None, None) } ->
+			false
+		in
+		if head_matches then true
+		else
+		  contains_iter tl
+	in
+	contains_iter lst
 
-(*
-  List.iteri (fun i round ->
-  Printf.printf "round %d - %d undecided\n" (i + 1) (List.length round);
-  List.iteri (fun i choice -> 
-  match choice with
-  | { entry_pair = Some a, Some b } ->
-  Printf.printf "  %d: %s vs %s\n" (i + 1) (Entry.to_string a) (Entry.to_string b)
-  | { entry_pair = None, Some b }->
-  Printf.printf "  %d: [] vs %s\n" (i + 1) (Entry.to_string b)
-  | { entry_pair = Some a, None } -> 
-  Printf.printf "  %d: [] vs %s\n" (i + 1) (Entry.to_string a)
-  | _ -> Printf.printf "%d: [] vs []" (i + 1))
-  round)
-  undecided 
-
-*)
+  let contains_choice_player lst choice =
+	match choice with
+	| { C.entry_pair = (Some a, Some b) } ->
+	  (contains_player lst a) || (contains_player lst b)
+	|	{ C.entry_pair = (Some a, None) } ->
+	  contains_player lst a
+	| { C.entry_pair = (None, Some b) } ->
+	  contains_player lst b
+	| { C.entry_pair = (None, None) } ->
+	  false
 
   let show tourney =
-	let container = Jsutil.getElementById_exn "container"
-	in
-	let checkGroupByRounds = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-	let checkGroupByEntries = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+	let container = Jsutil.getElementById_exn "container" in
 	let inner = Dom_html.createDiv doc in
 	let top = Dom_html.createDiv doc in
 	let add elt = Dom.appendChild container elt in
 	let addTop elt = Dom.appendChild top elt in
+	let check_boxes = ref [] in
+	let print positive group_spec tourney container =
+	  let groups = select_grouped group_spec tourney in
+	  delete_children container;
+	  positive##checked <- Js._true;
+	  List.iter (fun negative -> negative##checked <- Js._false)
+		(List.filter (fun check -> check <> positive) !check_boxes);
+	  render_groups tourney inner groups group_spec
+	in
+	let clicks =
+	  fun positive group_spec ->
+		  check_boxes := positive :: !check_boxes;
+	  (* toggle radio buttons *)
+		Lwt_js_events.clicks positive (fun event event_loop ->
+		  Lwt.return (print positive group_spec tourney inner))
+	in
+	let add_group_checkbox group_spec =
+	  let checkGroup = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+	  Jsutil.textNode group_spec.Entry.name |> addTop;
+	  addTop checkGroup;
+	  ignore (clicks checkGroup group_spec);
+	  (checkGroup, group_spec)
+	in
+	let add_round_group_checkbox () =
+	  add_group_checkbox {
+		Entry.name = "By Round";
+		Entry.header_name = (fun ~num_rounds ~pos:round lst ->
+		  (if round = 0 then
+			  "Finals\n"
+		   else
+			  (if round = 1 then
+				  "Semifinals"
+			   else
+				  (if round = 2 then
+					  "Quarterfinals"
+				   else
+					  Printf.sprintf
+						"Round %d (%d matches)"
+						(num_rounds - round)
+						(List.length lst)))));
+		Entry.compare_choice = (fun a b -> compare a b);
+		Entry.compare_group = (fun g1 g2 -> compare (List.length g1) (List.length g2));
+		Entry.in_group = (fun choice group ->
+		  let (round_matches, already) = match group with
+			  { C.round = r1; _ } :: _ ->
+				(choice.C.round = r1), (contains_choice_player group choice)
+			| _ -> failwith "Invalid group" in
+
+		  {
+			League.Player.quit = round_matches && already;
+			this_group = round_matches && not already
+		  });
+		Entry.convert = (fun x -> x);
+		Entry.column_extractor =
+		  (fun num pos choice -> 
+			match choice with
+			| { C.entry_pair = Some a, Some b; winner = Some c } ->
+			  let loser = if c = a then b else a in
+			  [ ((Entry.to_string c), None);
+				"defeated", (Some "tourney-won");
+				(Entry.to_string loser), None ]
+			| { C.entry_pair = Some a, Some b; winner = None } ->
+			  [ (Entry.to_string a), None;
+				"will face", (Some "tourney-willFace");
+				(Entry.to_string b), None ]
+			| { C.entry_pair = Some a, None; _ } ->
+			  [ (Entry.to_string a), None;
+				"will face", (Some "tourney-willFace");
+				"(To be decided)", None ]
+			| _ ->
+			  failwith "bug 4")
+	  }		  
+
+	in
+	let add_performance_group_checkbox () =
+	  let name = "By Performance" in
+	  let header_name =
+		(fun ~num_rounds ~pos lst ->
+		  match lst with
+			choice :: tl -> 
+			  (match choice with
+				{ C.entry_pair = (Some a), _ ; _ }
+				-> Entry.to_string a
+			  | _ -> failwith "Bad entry for header")
+		  | _ -> failwith "Bad group for header") in
+	  let compare_choice = (fun c1 c2 -> -(compare c1 c2)) in
+	  let compare_group =
+		(fun g1 g2 ->
+		  let cmp = -(compare (List.length g1)
+						(List.length g2)) in
+		  if cmp = 0 then (match g1, g2 with
+			({ C.entry_pair = (Some a), _ ; _ } :: _,
+			 { C.entry_pair = (Some b), _ ; _ } :: _) ->
+			  compare a b
+		  | _ -> failwith "bad group compare")
+		  else
+			cmp) in
+	  let in_group =
+		(fun choice group -> {
+		  League.Player.quit = false;
+		  this_group =
+			(match choice with
+			  { C.entry_pair = (Some a), _ ; _ }
+			  -> (match group with
+				{ C.entry_pair = (Some b), _ } :: _ ->
+				  a = b
+			  | _ -> failwith "Bad existing member")
+			| _ -> failwith "Bad choice for group");
+		}) in
+	  let column_extractor =
+		(fun num pos choice ->
+		  match choice with
+		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
+			let outcome = if c = a then "Defeated" else "Was defeated by" in
+			[ outcome,
+			  (Some (if c = a then "tourney-won" else "tourney-lost"));
+			  (Entry.to_string b), None;
+			  ("In round " ^ (string_of_int (num - pos))), None ]
+		  | { C.entry_pair = Some a, Some b; winner = None } ->
+			[ "will play", None;
+			  (Entry.to_string b), None ]
+		  | { C.entry_pair = Some a, None; winner = None } ->
+			[ "will play", None;
+			  "To be determined", None ]
+		  | _ -> failwith "bug") in
+	  add_group_checkbox {
+		Entry.name=name;
+		Entry.header_name=header_name;
+		Entry.compare_choice=compare_choice;
+		Entry.compare_group=compare_group;
+		Entry.in_group=in_group;
+		Entry.column_extractor=column_extractor;
+		Entry.convert = (fun x -> x);
+	  }
+	in
 	top##className <- (Js.string "tourney-menuDiv");
 	add top;
-	Jsutil.textNode "By Round" |> addTop;
-	addTop checkGroupByRounds;
-	Jsutil.textNode "By Entry" |> addTop;
-	addTop checkGroupByEntries;
 	add inner;
-	print_by_round tourney inner;
-	checkGroupByRounds##checked <- Js._true;
-	let clicks positive negative print =
-	(* toggle radio buttons *)
-	  Lwt_js_events.clicks positive (fun event event_loop ->
-		delete_children inner;
-		negative##checked <- Js._false;
-		Lwt.return (print tourney inner))
-	in
-	ignore (clicks checkGroupByRounds checkGroupByEntries print_by_round);
-	ignore (clicks checkGroupByEntries checkGroupByRounds print_by_entry)
+	let checkGroupByRounds, by_round = add_round_group_checkbox () in
+	let () = ignore(add_performance_group_checkbox ()) in 
+	List.iter (fun spec -> ignore (add_group_checkbox spec))
+	  Entry.player_specs;
+	print checkGroupByRounds by_round tourney inner 
+
+
 
   let play ~entries ~outcomes =
 	let db = League.make_db () in

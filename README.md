@@ -1,3 +1,10 @@
+player groups:
+
+- 1 special protocol for players
+
+- 2 entries access player fields
+- 3 put entry/player in same module
+
 DISTRIBUTION
 ============
 
@@ -23,7 +30,7 @@ most important ops:
 2 - filter by name 
 3 - group by Player.country
 3 - filter by country
-3 - group by (seed, name ascending)
+3 - group by: player (seed, name ascending)
 
 columns
 

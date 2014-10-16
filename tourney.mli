@@ -2,12 +2,7 @@
 module type S = sig
   type e
 
-  type choice = {
-	entry_pair : e option * e option;
-	winner : e option;
-  }
-
-  type round_in_progress = choice list
+  type round_in_progress = e Choice.t list
 
   type tourney
 
