@@ -12,59 +12,41 @@ module M: Player.S =
 
 	let to_string x = x.pname ^ " " ^ x.country
 
-  type group_result =  {
-	quit: bool;
-	this_group: bool;
-  }
-  type column = string * string option
-
-  type grouping_spec = {
-	name:string;
-	header_name: num_rounds:int -> pos:int -> t Choice.t list -> string;
-	compare_choice: t Choice.t -> t Choice.t -> int;
-	compare_group: t Choice.t list -> t Choice.t list -> int;
-	in_group: t Choice.t -> t Choice.t list -> group_result;
-	column_extractor: int -> int -> t Choice.t -> column list;
-  }
-
 	let grouping_specs = [
-	  {
-		header_name = (fun ~num_rounds ~pos lst ->
+	  object
+		method header_name ~num_rounds ~pos lst =
 		  match lst with
 			choice :: tl -> 
 			  (match choice with
 				{ C.entry_pair = (Some a), _ ; _ }
 				-> a.country
 			  | _ -> failwith "Bad entry for header")
-		  | _ -> failwith "Bad group for header");
-		name = "By Country";
-		compare_choice = (fun c1 c2 ->
-		  compare (C.first c1).pname (C.first c2).pname);
-		compare_group = 
-		  (fun g1 g2 ->
-			let cmp = -(compare (List.length g1)
-						  (List.length g2)) in
-			if cmp = 0 then (match g1, g2 with
-			  ({ C.entry_pair = (Some a), _ ; _ } :: _,
-			   { C.entry_pair = (Some b), _ ; _ } :: _) ->
-				compare a b
-			| _ -> failwith "bad group compare")
-			else
-			  cmp);
-		in_group =
-		  (fun choice group -> {
-			quit = false;
-			this_group =
-			  (match choice with
-				{ C.entry_pair = (Some a), _ ; _ }
-				-> (match group with
-				  { C.entry_pair = (Some b), _ } :: _ ->
-					a.country = b.country
-				| _ -> failwith "Bad existing member")
-			  | _ -> failwith "Bad choice for group");
-		  });
-		column_extractor =
-		(fun num pos choice ->
+		  | _ -> failwith "Bad group for header"
+		method name = "By Country";
+		method compare_choice c1 c2 =
+		  compare (C.first c1).pname (C.first c2).pname
+		method compare_group g1 g2 =
+		  let cmp = -(compare (List.length g1)
+						(List.length g2)) in
+		  if cmp = 0 then (match g1, g2 with
+			({ C.entry_pair = (Some a), _ ; _ } :: _,
+			 { C.entry_pair = (Some b), _ ; _ } :: _) ->
+			  compare a b
+		  | _ -> failwith "bad group compare")
+		  else
+			cmp
+		method in_group choice group = {
+		  Ttypes.quit = false;
+		  this_group =
+			(match choice with
+			  { C.entry_pair = (Some a), _ ; _ }
+			  -> (match group with
+				{ C.entry_pair = (Some b), _ } :: _ ->
+				  a.country = b.country
+			  | _ -> failwith "Bad existing member")
+			| _ -> failwith "Bad choice for group");
+		}
+		method column_extractor num pos choice =
 		  match choice with
 		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
 			let outcome = if c = a then "Defeated" else "Was defeated by" in
@@ -78,8 +60,8 @@ module M: Player.S =
 			  (to_string b), None ]
 		  | { C.entry_pair = Some a, None; winner = None } ->
 			[]
-		  | _ -> failwith "bug");
-	  }
+		  | _ -> failwith "bug"
+	  end
 	]
 
 

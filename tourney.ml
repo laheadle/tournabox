@@ -163,17 +163,17 @@ module Make(League: League.S) = struct
 	let rec add_choice_iter choice lst =
 	  match lst with [] -> [[choice]]
 	  | hd :: tl -> 
-		let group_result = group_spec.Entry.in_group choice hd in
-		if group_result.League.Player.quit then lst
+		let group_result = group_spec#in_group choice hd in
+		if group_result.Ttypes.quit then lst
 		else
-		  if group_result.League.Player.this_group then (choice :: hd) :: tl
+		  if group_result.Ttypes.this_group then (choice :: hd) :: tl
 		  else
 			hd :: (add_choice_iter choice tl)
 	in
 	let add_choice ichoice =
 	  choices :=
 		add_choice_iter
-		(group_spec.Entry.convert (convert ichoice))
+		(group_spec#convert (convert ichoice))
 		!choices
 	in
 	for i = 0 to Array.length tourney.rounds - 1 do
@@ -192,8 +192,8 @@ module Make(League: League.S) = struct
 	  done
 	done;
 	List.sort
-	  group_spec.Entry.compare_group
-	  (List.map (List.sort group_spec.Entry.compare_choice) !choices)
+	  group_spec#compare_group
+	  (List.map (List.sort group_spec#compare_choice) !choices)
 
   let delete_children node =
 	let children = node##childNodes in
@@ -208,7 +208,7 @@ module Make(League: League.S) = struct
 	let do_choices groupi choices =
 	  let num_choices = List.length choices in
 	  let header_str =
-		grouping_spec.Entry.header_name num_rounds groupi choices in
+		grouping_spec#header_name ~num_rounds ~pos:groupi choices in
 	  let table = Jsutil.table (Some "tourney-outerTable") in
 	  let header = Dom_html.createTr doc in
 	  Jsutil.addTd header header_str (Some "tourney-header");
@@ -216,7 +216,7 @@ module Make(League: League.S) = struct
 	  let do_choice i choice =
 		let row = Dom_html.createTr doc in
 		let columns =
-		  grouping_spec.Entry.column_extractor num_choices i choice in
+		  grouping_spec#column_extractor num_choices i choice in
 		List.iter (fun (col, clss) -> Jsutil.addTd row col clss) columns;
 		Dom.appendChild table row
 	  in
@@ -281,123 +281,113 @@ module Make(League: League.S) = struct
 	in
 	let add_group_checkbox group_spec =
 	  let checkGroup = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-	  Jsutil.textNode group_spec.Entry.name |> addTop;
+	  Jsutil.textNode group_spec#name |> addTop;
 	  addTop checkGroup;
 	  ignore (clicks checkGroup group_spec);
 	  (checkGroup, group_spec)
 	in
 	let add_round_group_checkbox () =
-	  add_group_checkbox {
-		Entry.name = "By Round";
-		Entry.header_name = (fun ~num_rounds ~pos:round lst ->
-		  (if round = 0 then
-			  "Finals\n"
-		   else
-			  (if round = 1 then
-				  "Semifinals"
-			   else
-				  (if round = 2 then
-					  "Quarterfinals"
-				   else
-					  Printf.sprintf
-						"Round %d (%d matches)"
-						(num_rounds - round)
-						(List.length lst)))));
-		Entry.compare_choice = (fun a b -> compare a b);
-		Entry.compare_group = (fun g1 g2 -> compare (List.length g1) (List.length g2));
-		Entry.in_group = (fun choice group ->
+	  add_group_checkbox (object
+		method name = "By Round"
+		method header_name ~num_rounds ~pos:round lst =
+		  if round = 0 then
+			"Finals\n"
+		  else
+			(if round = 1 then
+				"Semifinals"
+			 else
+				(if round = 2 then
+					"Quarterfinals"
+				 else
+					(Printf.sprintf
+					   "Round %d (%d matches)"
+					   (num_rounds - round)
+					   (List.length lst))))
+		method compare_choice a b = compare a b
+		method compare_group g1 g2 = compare (List.length g1) (List.length g2)
+		method in_group choice group =
 		  let (round_matches, already) = match group with
 			  { C.round = r1; _ } :: _ ->
 				(choice.C.round = r1), (contains_choice_player group choice)
 			| _ -> failwith "Invalid group" in
 
 		  {
-			League.Player.quit = round_matches && already;
+			Ttypes.quit = round_matches && already;
 			this_group = round_matches && not already
-		  });
-		Entry.convert = (fun x -> x);
-		Entry.column_extractor =
-		  (fun num pos choice -> 
-			match choice with
-			| { C.entry_pair = Some a, Some b; winner = Some c } ->
-			  let loser = if c = a then b else a in
-			  [ ((Entry.to_string c), None);
-				"defeated", (Some "tourney-won");
-				(Entry.to_string loser), None ]
-			| { C.entry_pair = Some a, Some b; winner = None } ->
-			  [ (Entry.to_string a), None;
-				"will face", (Some "tourney-willFace");
-				(Entry.to_string b), None ]
-			| { C.entry_pair = Some a, None; _ } ->
-			  [ (Entry.to_string a), None;
-				"will face", (Some "tourney-willFace");
-				"(To be decided)", None ]
-			| _ ->
-			  failwith "bug 4")
-	  }		  
-
+		  }
+		method convert x = x
+		method column_extractor num pos choice =
+		  match choice with
+		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
+			let loser = if c = a then b else a in
+			[ ((Entry.to_string c), None);
+			  "defeated", (Some "tourney-won");
+			  (Entry.to_string loser), None ]
+		  | { C.entry_pair = Some a, Some b; winner = None } ->
+			[ (Entry.to_string a), None;
+			  "will face", (Some "tourney-willFace");
+			  (Entry.to_string b), None ]
+		  | { C.entry_pair = Some a, None; _ } ->
+			[ (Entry.to_string a), None;
+			  "will face", (Some "tourney-willFace");
+			  "(To be decided)", None ]
+		  | _ ->
+			failwith "bug 4"
+	  end)
+	  
 	in
 	let add_performance_group_checkbox () =
-	  let name = "By Performance" in
-	  let header_name =
-		(fun ~num_rounds ~pos lst ->
+	  add_group_checkbox ( object
+	  method name = "By Performance"
+	  method header_name ~num_rounds ~pos lst =
 		  match lst with
 			choice :: tl -> 
 			  (match choice with
 				{ C.entry_pair = (Some a), _ ; _ }
 				-> Entry.to_string a
 			  | _ -> failwith "Bad entry for header")
-		  | _ -> failwith "Bad group for header") in
-	  let compare_choice = (fun c1 c2 -> -(compare c1 c2)) in
-	  let compare_group =
-		(fun g1 g2 ->
-		  let cmp = -(compare (List.length g1)
-						(List.length g2)) in
-		  if cmp = 0 then (match g1, g2 with
-			({ C.entry_pair = (Some a), _ ; _ } :: _,
-			 { C.entry_pair = (Some b), _ ; _ } :: _) ->
-			  compare a b
-		  | _ -> failwith "bad group compare")
-		  else
-			cmp) in
-	  let in_group =
-		(fun choice group -> {
-		  League.Player.quit = false;
-		  this_group =
-			(match choice with
-			  { C.entry_pair = (Some a), _ ; _ }
-			  -> (match group with
-				{ C.entry_pair = (Some b), _ } :: _ ->
-				  a = b
-			  | _ -> failwith "Bad existing member")
-			| _ -> failwith "Bad choice for group");
-		}) in
-	  let column_extractor =
-		(fun num pos choice ->
-		  match choice with
-		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
-			let outcome = if c = a then "Defeated" else "Was defeated by" in
-			[ outcome,
-			  (Some (if c = a then "tourney-won" else "tourney-lost"));
-			  (Entry.to_string b), None;
-			  ("In round " ^ (string_of_int (num - pos))), None ]
-		  | { C.entry_pair = Some a, Some b; winner = None } ->
-			[ "will play", None;
-			  (Entry.to_string b), None ]
-		  | { C.entry_pair = Some a, None; winner = None } ->
-			[ "will play", None;
-			  "To be determined", None ]
-		  | _ -> failwith "bug") in
-	  add_group_checkbox {
-		Entry.name=name;
-		Entry.header_name=header_name;
-		Entry.compare_choice=compare_choice;
-		Entry.compare_group=compare_group;
-		Entry.in_group=in_group;
-		Entry.column_extractor=column_extractor;
-		Entry.convert = (fun x -> x);
+		  | _ -> failwith "Bad group for header"
+	  method compare_choice c1 c2 = -(compare c1 c2)
+	  method compare_group g1 g2 =
+		let cmp = -(compare (List.length g1)
+					  (List.length g2)) in
+		if cmp = 0 then (match g1, g2 with
+		  ({ C.entry_pair = (Some a), _ ; _ } :: _,
+		   { C.entry_pair = (Some b), _ ; _ } :: _) ->
+			compare a b
+		| _ -> failwith "bad group compare")
+		else
+		  cmp
+	  method in_group choice group = {
+		Ttypes.quit = false;
+		this_group =
+		  (match choice with
+			{ C.entry_pair = (Some a), _ ; _ }
+			-> (match group with
+			  { C.entry_pair = (Some b), _ } :: _ ->
+				a = b
+			| _ -> failwith "Bad existing member")
+		  | _ -> failwith "Bad choice for group")
 	  }
-	in
+	  method convert x = x
+	  method column_extractor num pos choice =
+		match choice with
+		| { C.entry_pair = Some a, Some b; winner = Some c } ->
+		  let outcome = if c = a then "Defeated" else "Was defeated by" in
+		  [ outcome,
+			(Some (if c = a then "tourney-won" else "tourney-lost"));
+			(Entry.to_string b), None;
+			("In round " ^ (string_of_int (num - pos))), None ]
+		| { C.entry_pair = Some a, Some b; winner = None } ->
+		  [ "will play", None;
+			(Entry.to_string b), None ]
+		| { C.entry_pair = Some a, None; winner = None } ->
+		  [ "will play", None;
+			"To be determined", None ]
+		| _ -> failwith "bug"
+	  end)
+  
+  in
 	top##className <- (Js.string "tourney-menuDiv");
 	add top;
 	add inner;
