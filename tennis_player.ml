@@ -15,13 +15,11 @@ module M: Player.S =
 	let grouping_specs = [
 	  object
 		method header_name ~num_rounds ~pos lst =
-		  match lst with
-			choice :: tl -> 
-			  (C.first choice).country
+		  C.extract_first_first lst (fun p -> p.country)
 		method name = "By Country";
 		method compare_choice c1 c2 =
 		  compare (C.first c1).pname (C.first c2).pname
-		method compare_group =  C.compare_length_then_first
+		method compare_group =  fun g1 g2 -> -(C.compare_length_then_first g1 g2)
 		method in_group choice group = {
 		  Ttypes.quit = false;
 		  this_group = C.compare_first choice group (fun p -> p.country)

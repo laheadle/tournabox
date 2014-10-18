@@ -22,7 +22,7 @@ let map f = function
   }
 
 let compare_length_then_first g1 g2 =
-  let cmp = -(compare (List.length g1)
+  let cmp = (compare (List.length g1)
 				(List.length g2)) in
   if cmp = 0 then (match g1, g2 with
 	({ entry_pair = (Some a), _ ; _ } :: _,

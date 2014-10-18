@@ -342,7 +342,7 @@ module Make(League: League.S) = struct
 	  method header_name ~num_rounds ~pos lst =
 		  C.extract_first_first lst (fun e -> Entry.to_string e)
 	  method compare_choice c1 c2 = -(compare c1 c2)
-	  method compare_group =  C.compare_length_then_first
+	  method compare_group =  fun g1 g2 -> -(C.compare_length_then_first g1 g2)
 	  method in_group choice group = {
 		Ttypes.quit = false;
 		this_group =
