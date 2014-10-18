@@ -17,34 +17,14 @@ module M: Player.S =
 		method header_name ~num_rounds ~pos lst =
 		  match lst with
 			choice :: tl -> 
-			  (match choice with
-				{ C.entry_pair = (Some a), _ ; _ }
-				-> a.country
-			  | _ -> failwith "Bad entry for header")
-		  | _ -> failwith "Bad group for header"
+			  (C.first choice).country
 		method name = "By Country";
 		method compare_choice c1 c2 =
 		  compare (C.first c1).pname (C.first c2).pname
-		method compare_group g1 g2 =
-		  let cmp = -(compare (List.length g1)
-						(List.length g2)) in
-		  if cmp = 0 then (match g1, g2 with
-			({ C.entry_pair = (Some a), _ ; _ } :: _,
-			 { C.entry_pair = (Some b), _ ; _ } :: _) ->
-			  compare a b
-		  | _ -> failwith "bad group compare")
-		  else
-			cmp
+		method compare_group =  C.compare_length_then_first
 		method in_group choice group = {
 		  Ttypes.quit = false;
-		  this_group =
-			(match choice with
-			  { C.entry_pair = (Some a), _ ; _ }
-			  -> (match group with
-				{ C.entry_pair = (Some b), _ } :: _ ->
-				  a.country = b.country
-			  | _ -> failwith "Bad existing member")
-			| _ -> failwith "Bad choice for group");
+		  this_group = C.compare_first choice group (fun p -> p.country)
 		}
 		method column_extractor num pos choice =
 		  match choice with

@@ -10,6 +10,7 @@ sig
   val make: Player.t -> data -> t
   val parse: string -> (string * data)
 
+  val entry_specs: (t, t) Ttypes.converted_grouping_spec list
   val player_specs: (player, t) Ttypes.converted_grouping_spec list
 end
 

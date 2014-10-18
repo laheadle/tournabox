@@ -304,7 +304,7 @@ module Make(League: League.S) = struct
 					   (num_rounds - round)
 					   (List.length lst))))
 		method compare_choice a b = compare a b
-		method compare_group g1 g2 = compare (List.length g1) (List.length g2)
+		method compare_group = C.compare_length_then_first
 		method in_group choice group =
 		  let (round_matches, already) = match group with
 			  { C.round = r1; _ } :: _ ->
@@ -340,24 +340,9 @@ module Make(League: League.S) = struct
 	  add_group_checkbox ( object
 	  method name = "By Performance"
 	  method header_name ~num_rounds ~pos lst =
-		  match lst with
-			choice :: tl -> 
-			  (match choice with
-				{ C.entry_pair = (Some a), _ ; _ }
-				-> Entry.to_string a
-			  | _ -> failwith "Bad entry for header")
-		  | _ -> failwith "Bad group for header"
+		  C.extract_first_first lst (fun e -> Entry.to_string e)
 	  method compare_choice c1 c2 = -(compare c1 c2)
-	  method compare_group g1 g2 =
-		let cmp = -(compare (List.length g1)
-					  (List.length g2)) in
-		if cmp = 0 then (match g1, g2 with
-		  ({ C.entry_pair = (Some a), _ ; _ } :: _,
-		   { C.entry_pair = (Some b), _ ; _ } :: _) ->
-			compare a b
-		| _ -> failwith "bad group compare")
-		else
-		  cmp
+	  method compare_group =  C.compare_length_then_first
 	  method in_group choice group = {
 		Ttypes.quit = false;
 		this_group =
@@ -393,8 +378,9 @@ module Make(League: League.S) = struct
 	add inner;
 	let checkGroupByRounds, by_round = add_round_group_checkbox () in
 	let () = ignore(add_performance_group_checkbox ()) in 
-	List.iter (fun spec -> ignore (add_group_checkbox spec))
-	  Entry.player_specs;
+	let add spec = ignore (add_group_checkbox spec) in
+	List.iter add Entry.player_specs;
+	List.iter add Entry.entry_specs;
 	print checkGroupByRounds by_round tourney inner 
 
 

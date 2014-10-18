@@ -20,3 +20,30 @@ let map f = function
 	entry_pair = (convert p1, convert p2);
 	winner = convert winner;
   }
+
+let compare_length_then_first g1 g2 =
+  let cmp = -(compare (List.length g1)
+				(List.length g2)) in
+  if cmp = 0 then (match g1, g2 with
+	({ entry_pair = (Some a), _ ; _ } :: _,
+	 { entry_pair = (Some b), _ ; _ } :: _) ->
+	  compare a b
+  | _ -> failwith "bad group compare")
+  else
+	cmp
+
+let compare_first choice group f =
+  (match choice with
+	{ entry_pair = (Some a), _ ; _ }
+	-> (match group with
+	  { entry_pair = (Some b), _ } :: _ ->
+		(f a) = (f b)
+	| _ -> failwith "Bad existing member")
+  | _ -> failwith "Bad choice for group")
+
+let extract_first_first lst f =
+	match lst with
+	  choice :: tl -> 
+		f (first choice)
+	| _ -> failwith "Bad extract_first_first"
+

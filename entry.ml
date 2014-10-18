@@ -40,6 +40,52 @@ struct
 	  let name = get_name str in
 	  (name, seed)
 
+	let entry_specs =
+	  [
+	  object
+		method header_name ~num_rounds ~pos lst =
+		  C.extract_first_first lst (fun e -> to_string e)
+		method name = "By Seed";
+		method compare_choice c1 c2 = -(compare c1 c2)
+		method compare_group g1 g2 =
+		  (match g1, g2 with
+			({ C.entry_pair = (Some a), _ ; _ } :: _,
+			 { C.entry_pair = (Some b), _ ; _ } :: _) ->
+			 ( match (a.seed, b.seed) with
+				None, None ->
+				  let cmp =
+					compare (List.length g2) (List.length g1) in
+				  if cmp = 0 then
+					compare (to_string a) (to_string b)
+				  else cmp
+			  | Some v, None -> -1
+			  | None, Some v -> 1
+			  | Some v, Some v2 -> compare v v2)
+		  | _ -> failwith "bad group compare")
+		method in_group choice group = {
+		  Ttypes.quit = false;
+		  this_group = C.compare_first choice group
+			(fun e -> (e.seed, Player.to_string e.player))
+		}
+		method column_extractor num pos choice =
+		  match choice with
+		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
+			let outcome = if c = a then "Defeated" else "Was defeated by" in
+			[ outcome,
+			  (Some (if c = a then "tourney-won" else "tourney-lost"));
+			  (to_string b), None]
+		  | { C.entry_pair = Some a, Some b; winner = None } ->
+			[ 
+			  "will play", None;
+			  (to_string b), None ]
+		  | { C.entry_pair = Some a, None; winner = None } ->
+			[]
+		  | _ -> failwith "bug"
+
+		method convert x = x
+	  end
+	]
+
 	let player_specs =
 	  List.map (fun pspec ->
 				object
