@@ -49,9 +49,14 @@ let contains s1 s2 =
 	else if pos = 0 then false
 	else try_all (pos - 1)
   in
-  let start = String.length s1 - String.length s2 in
-  if start < 0 then false
-  else try_all start
+  let len2 = String.length s2 in
+  let len1 = String.length s1 in
+  let start = len1 - len2 in
+  if len2 = 0 then true
+  else
+	if start < 0 || len1 = 0 then false
+	else
+	  try_all start
 
 
 let pick list partial to_string =

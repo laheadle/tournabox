@@ -8,3 +8,4 @@ val log: int -> int -> int
 
 val pick: 'a list -> string -> ('a -> string) -> 'a
 
+val contains: string -> string -> bool

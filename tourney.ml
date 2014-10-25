@@ -209,28 +209,26 @@ module Make(League: League.S) = struct
 	  let num_choices = List.length choices in
 	  let header_str =
 		grouping_spec#header_name ~num_rounds ~pos:groupi choices in
-	  if (not (filter header_str)) then ()
-	  else begin
-		let table = Jsutil.table (Some "tourney-outerTable") in
-		let header = Dom_html.createTr doc in
-		Jsutil.addTd header header_str (Some "tourney-header");
-		Dom.appendChild table header;
-		let do_choice i choice =
-		  let row = Dom_html.createTr doc in
-		  let columns =
-			grouping_spec#column_extractor num_choices i choice in
-		  let columns =
-			List.filter (fun (value, clazz) -> filter value)
-			  columns in
-		  (match columns with
-			[] -> ()
-		  | _ ->
+	  let table = Jsutil.table (Some "tourney-outerTable") in
+	  let header = Dom_html.createTr doc in
+	  Jsutil.addTd header header_str (Some "tourney-header");
+	  Dom.appendChild table header;
+	  let do_choice i choice =
+		let row = Dom_html.createTr doc in
+		let columns =
+		  grouping_spec#column_extractor num_choices i choice in
+		let matches =
+		  List.exists
+			(fun (value, clazz) -> filter header_str || filter value)
+			columns in
+		if matches then
+		  begin
 			List.iter (fun (col, clss) -> Jsutil.addTd row col clss) columns;
-			Dom.appendChild table row)
-		in
-		List.iteri do_choice choices;
-		Dom.appendChild container table
-	  end
+			Dom.appendChild table row
+		  end
+	  in
+	  List.iteri do_choice choices;
+	  Dom.appendChild container table
 	in
 	List.iteri do_choices groups
 
@@ -354,10 +352,20 @@ module Make(League: League.S) = struct
   type check = Dom_html.inputElement Js.t
   type ('a, 'b) gspec = ('a, 'b) Ttypes.converted_grouping_spec
 
-  type ('a, 'b) op =
-	Key of string
-  | Group of check * ('a, 'b) gspec
+  type op =
+	Key
+  | EGroup of check * (Entry.t, Entry.t) gspec
+  | PGroup of check * (Entry.player, Entry.t) gspec
 
+(*
+  let get_espec: 'a 'b. ('a * 'b) -> ('a * 'a)
+	= fun (x, y) -> (x, x)
+
+  let get_espec: 'a 'b. ('a, 'b) op -> ('a, 'a) gspec
+	= function
+	| Egroup (check, gspec) -> gspec
+	| _ -> failwith "get_espec"
+*)
   let show tourney =
 	let container = Jsutil.getElementById_exn "container" in
 	let inner = Dom_html.createDiv doc in
@@ -365,47 +373,70 @@ module Make(League: League.S) = struct
 	let domAdd = Dom.appendChild in
 	let add elt = domAdd container elt in
 	let addTop elt = domAdd top elt in
-	let select_and_render filter positive group_spec tourney container check_boxes =
-	  let groups = select_grouped group_spec tourney in
+	let select_and_render filter positive op tourney container check_boxes =
 	  delete_children container;
 	  positive##checked <- Js._true;
 	  List.iter (fun negative -> negative##checked <- Js._false)
-		(List.filter (fun check -> check <> positive) check_boxes);
-	  render_groups tourney inner groups group_spec
-		(fun str -> str = filter)
+		(List.filter (fun check -> check <> positive ) check_boxes);
+	  let filter_func str =
+		let result = Util.contains
+		  (String.lowercase str) (String.lowercase filter) in
+		  (* Printf.printf "%b: %s" result str; flush_all (); *)
+		result in
+	  match op with
+		EGroup (check, espec) ->
+		  let groups = select_grouped espec tourney in
+		  render_groups tourney inner groups espec filter_func
+	  | PGroup (check, pspec) ->
+		let groups = select_grouped pspec tourney in
+		render_groups tourney inner groups pspec filter_func
+	  | _ -> failwith "get_espec"
 	in
-	let filter = ref "" in
 	let middle = Dom_html.createDiv doc in
 	let filter_box = Dom_html.createInput doc in
 	let key input =
 	  Lwt.bind
 		(Lwt_js_events.keyup input)
-		(fun event ->
-		  let jstr = Js.Optdef.get (event##keyIdentifier)
-			(fun ()->assert false) in
-		  Lwt.return (Key (Js.to_string jstr))) in
+		(fun event -> Lwt.return Key) in
 	let clicks = function
-	  | Group (positive, _) as g ->
+	  | EGroup (positive, _) as g ->
+		Lwt.bind
+		  (Lwt_js_events.click positive)
+		  (fun _ -> Lwt.return g)
+	  | PGroup (positive, _) as g ->
 		Lwt.bind
 		  (Lwt_js_events.click positive)
 		  (fun _ -> Lwt.return g)
 	  | _ -> failwith "bad clicks"
 	in
-	let rec main_loop filter check_box group_spec ops checks tourney inner =
+	let rec main_loop (*: 'a 'b. string ->
+	  check ->
+	  ('a, 'b) op ->
+	  ('a, 'b) op list ->
+	  check list -> tourney -> #Dom.node Js.t -> unit Lwt.t
+					  *) = fun filter check_box op ops checks tourney inner ->
+	  (* Js.debugger (); *)
 	  let threads = (key filter_box) :: (List.map clicks ops) in
 	  let triggered = Lwt.pick threads in
 	  Lwt.bind triggered (fun op ->
-		ignore(match op with
-		  Group (checkbox, group_spec) ->
-			select_and_render filter check_box group_spec tourney inner checks
-		| Key key_code ->
-		  select_and_render (filter ^ key_code)
-			check_box group_spec tourney inner checks);
-		main_loop filter check_box group_spec ops checks tourney inner)
+		let _ =
+		  match op with
+		  EGroup (check_box, group_spec) ->
+			select_and_render filter check_box op tourney inner checks;
+			main_loop filter check_box op ops checks tourney inner
+		| PGroup (check_box, group_spec) ->
+		  select_and_render filter check_box op tourney inner checks;
+		  main_loop filter check_box op ops checks tourney inner
+		| Key ->
+		  let value = (Js.to_string filter_box##value) in
+		  Printf.printf "%s" value; flush_all ();
+		  select_and_render value check_box op tourney inner checks;
+		  main_loop value check_box op ops checks tourney inner in
+		Lwt.return ())
 	in
-	let enter_main_loop first_check_box first_group_spec ops checks tourney inner =
-	  select_and_render "" first_check_box first_group_spec tourney inner checks;
-	  main_loop  ""  first_check_box first_group_spec ops checks tourney inner
+	let enter_main_loop first_check_box first_op ops checks tourney inner =
+	  select_and_render "" first_check_box first_op tourney inner checks;
+	  main_loop  ""  first_check_box first_op ops checks tourney inner
 	in
 	let add_group_checkbox group_spec =
 	  let checkGroup = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
@@ -422,21 +453,26 @@ module Make(League: League.S) = struct
 	top##className <- (Js.string "tourney-menuDiv");
 	add top;
 	add middle;
-	domAdd middle container;
-	domAdd filter_box middle;
+	domAdd container middle;
+	domAdd middle filter_box;
 	add inner;
 	let (check_rounds, by_round) as round = add_round_group_checkbox () in
 	let (check_performance, by_performance) as perf = add_performance_group_checkbox () in 
-	let add spec = add_group_checkbox spec in
+	let add = add_group_checkbox in
 	let pspecs = List.map add Entry.player_specs in
 	let especs = List.map add Entry.entry_specs in
+	let emake (check, spec) = EGroup (check, spec) in
 	let (ops, checks) =
-	  let checks_and_specs = (round :: perf :: pspecs) @ especs in
-	  let make (check, spec) = Group (check, spec) in
+	  let all_especs = round :: perf :: especs in
+	  let pmake (check, spec) = PGroup (check, spec) in
 	  let get_check (check, _) = check in
-	  (List.map make checks_and_specs),
-	  (List.map get_check checks_and_specs) in
-	enter_main_loop check_rounds by_round ops checks tourney inner 
+	  (List.map emake all_especs @
+		 List.map pmake pspecs),
+	  (List.map get_check all_especs @
+		 List.map get_check pspecs)
+	in
+	ignore(enter_main_loop check_rounds (emake (check_rounds, by_round)) ops checks tourney inner);
+	()
 
 
 
