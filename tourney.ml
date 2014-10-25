@@ -381,7 +381,7 @@ module Make(League: League.S) = struct
 	  let filter_func str =
 		let result = Util.contains
 		  (String.lowercase str) (String.lowercase filter) in
-		  (* Printf.printf "%b: %s" result str; flush_all (); *)
+		   Printf.printf "%b: %s" result str; flush_all ();
 		result in
 	  match op with
 		EGroup (check, espec) ->
@@ -418,15 +418,15 @@ module Make(League: League.S) = struct
 	  (* Js.debugger (); *)
 	  let threads = (key filter_box) :: (List.map clicks ops) in
 	  let triggered = Lwt.pick threads in
-	  Lwt.bind triggered (fun op ->
+	  Lwt.bind triggered (fun new_op ->
 		let _ =
-		  match op with
+		  match new_op with
 		  EGroup (check_box, group_spec) ->
-			select_and_render filter check_box op tourney inner checks;
-			main_loop filter check_box op ops checks tourney inner
+			select_and_render filter check_box new_op tourney inner checks;
+			main_loop filter check_box new_op ops checks tourney inner
 		| PGroup (check_box, group_spec) ->
-		  select_and_render filter check_box op tourney inner checks;
-		  main_loop filter check_box op ops checks tourney inner
+		  select_and_render filter check_box new_op tourney inner checks;
+		  main_loop filter check_box new_op ops checks tourney inner
 		| Key ->
 		  let value = (Js.to_string filter_box##value) in
 		  Printf.printf "%s" value; flush_all ();
