@@ -4,7 +4,13 @@ type group_result =  {
   this_group: bool;
 }
 
-type column = string * string option
+type column = {
+  content: string;
+  class_name: string option;
+  should_filter: bool;
+}
+
+val make_column_extractor: string * string option * bool -> column
 
 class type ['a] grouping_spec = object
   method name:string

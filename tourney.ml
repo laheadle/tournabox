@@ -213,26 +213,31 @@ module Make(League: League.S) = struct
 	  let header = Dom_html.createTr doc in
 	  Jsutil.addTd header header_str (Some "tourney-header");
 	  Dom.appendChild table header;
-	  let num_matches = ref 0 in
+	  let has_matches = ref false in
 	  let do_choice i choice =
 		let row = Dom_html.createTr doc in
 		let columns =
 		  grouping_spec#column_extractor num_choices i choice in
 		let matches =
 		  List.exists
-			(fun (value, clazz) -> filter header_str || filter value)
+			(fun { Ttypes.content;
+				   should_filter;
+				   class_name = _ } -> 
+			  if should_filter then 
+				(filter header_str || filter content )
+			  else
+				false)
 			columns in
-		if matches then
-		  begin
-			incr num_matches;
-			List.iter (fun (col, clss) -> Jsutil.addTd row col clss) columns;
+		if matches then begin
+			has_matches := true;
+			List.iter (fun { Ttypes.class_name; content } -> Jsutil.addTd row content class_name) columns;
 			Dom.appendChild table row
 		  end
 	  in
 	  List.iteri do_choice choices;
-	  if !num_matches > 0 then
+	  if !has_matches then begin
 		Dom.appendChild container table
-	  else ()
+	  end
 	in
 	List.iteri do_choices groups
 
@@ -299,22 +304,23 @@ module Make(League: League.S) = struct
 		}
 	  method convert x = x
 	  method column_extractor num pos choice =
-		match choice with
-		| { C.entry_pair = Some a, Some b; winner = Some c } ->
-		  let loser = if c = a then b else a in
-		  [ ((Entry.to_string c), None);
-			"defeated", (Some "tourney-won");
-			(Entry.to_string loser), None ]
-		| { C.entry_pair = Some a, Some b; winner = None } ->
-		  [ (Entry.to_string a), None;
-			"will face", (Some "tourney-willFace");
-			(Entry.to_string b), None ]
-		| { C.entry_pair = Some a, None; _ } ->
-		  [ (Entry.to_string a), None;
-			"will face", (Some "tourney-willFace");
-			"(To be decided)", None ]
-		| _ ->
-		  failwith "bug 4"
+		let extractors = match choice with
+		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
+			let loser = if c = a then b else a in
+			[ (Entry.to_string c), None, true;
+			  "defeated", (Some "tourney-won"), false;
+			  (Entry.to_string loser), None, true ]
+		  | { C.entry_pair = Some a, Some b; winner = None } ->
+			[ (Entry.to_string a), None, true;
+			  "will face", (Some "tourney-willFace"), false;
+			  (Entry.to_string b), None, true ]
+		  | { C.entry_pair = Some a, None; _ } ->
+			[ (Entry.to_string a), None, true;
+			  "will face", (Some "tourney-willFace"), false;
+			  "(To be decided)", None, false ]
+		  | _ ->
+			failwith "bug 4" in
+		List.map Ttypes.make_column_extractor extractors
 	 end)
 
   let performance_group = 
@@ -337,20 +343,23 @@ module Make(League: League.S) = struct
 	  }
 	  method convert x = x
 	  method column_extractor num pos choice =
-		match choice with
-		| { C.entry_pair = Some a, Some b; winner = Some c } ->
-		  let outcome = if c = a then "Defeated" else "Was defeated by" in
-		  [ outcome,
-			(Some (if c = a then "tourney-won" else "tourney-lost"));
-			(Entry.to_string b), None;
-			("In round " ^ (string_of_int (num - pos))), None ]
-		| { C.entry_pair = Some a, Some b; winner = None } ->
-		  [ "will play", None;
-			(Entry.to_string b), None ]
-		| { C.entry_pair = Some a, None; winner = None } ->
-		  [ "will play", None;
-			"To be determined", None ]
-		| _ -> failwith "bug"
+		let extractors =
+		  match choice with
+		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
+			let outcome = if c = a then "Defeated" else "Was defeated by" in
+			[ outcome,
+			  Some (if c = a then "tourney-won" else "tourney-lost"),
+			  false;
+			  (Entry.to_string b), None, true;
+			  ("In round " ^ (string_of_int (num - pos))), None, false ]
+		  | { C.entry_pair = Some a, Some b; winner = None } ->
+			[ "will play", None, false;
+			  (Entry.to_string b), None, true ]
+		  | { C.entry_pair = Some a, None; winner = None } ->
+			[ "will play", None, false;
+			  "To be determined", None, false ]
+		  | _ -> failwith "bug" in
+		List.map Ttypes.make_column_extractor extractors
 	 end)
 
   type check = Dom_html.inputElement Js.t
