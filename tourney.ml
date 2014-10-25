@@ -213,6 +213,7 @@ module Make(League: League.S) = struct
 	  let header = Dom_html.createTr doc in
 	  Jsutil.addTd header header_str (Some "tourney-header");
 	  Dom.appendChild table header;
+	  let num_matches = ref 0 in
 	  let do_choice i choice =
 		let row = Dom_html.createTr doc in
 		let columns =
@@ -223,12 +224,15 @@ module Make(League: League.S) = struct
 			columns in
 		if matches then
 		  begin
+			incr num_matches;
 			List.iter (fun (col, clss) -> Jsutil.addTd row col clss) columns;
 			Dom.appendChild table row
 		  end
 	  in
 	  List.iteri do_choice choices;
-	  Dom.appendChild container table
+	  if !num_matches > 0 then
+		Dom.appendChild container table
+	  else ()
 	in
 	List.iteri do_choices groups
 
