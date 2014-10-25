@@ -394,7 +394,7 @@ module Make(League: League.S) = struct
 	  let filter_func str =
 		let result = Util.contains
 		  (String.lowercase str) (String.lowercase filter) in
-		   Printf.printf "%b: %s" result str; flush_all ();
+		   (*Printf.printf "%b: %s" result str; flush_all (); *)
 		result in
 	  match op with
 		EGroup (check, espec) ->
@@ -442,7 +442,7 @@ module Make(League: League.S) = struct
 		  main_loop filter check_box new_op ops checks tourney inner
 		| Key ->
 		  let value = (Js.to_string filter_box##value) in
-		  Printf.printf "%s" value; flush_all ();
+		  (* Printf.printf "%s" value; flush_all (); *)
 		  select_and_render value check_box op tourney inner checks;
 		  main_loop value check_box op ops checks tourney inner in
 		Lwt.return ())
@@ -467,13 +467,17 @@ module Make(League: League.S) = struct
 	add top;
 	add middle;
 	domAdd container middle;
-	domAdd middle filter_box;
 	add inner;
 	let (check_rounds, by_round) as round = add_round_group_checkbox () in
 	let (check_performance, by_performance) as perf = add_performance_group_checkbox () in 
 	let add = add_group_checkbox in
 	let pspecs = List.map add Entry.player_specs in
 	let especs = List.map add Entry.entry_specs in
+	let filter_span = Dom_html.createSpan doc in
+	domAdd filter_span (Jsutil.textNode "Filter: ");
+	filter_span##className <- (Js.string "tourney-filterBox");
+	domAdd filter_span filter_box;
+	domAdd top filter_span;
 	let emake (check, spec) = EGroup (check, spec) in
 	let (ops, checks) =
 	  let all_especs = round :: perf :: especs in
