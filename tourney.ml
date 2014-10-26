@@ -387,38 +387,31 @@ module Make(League: League.S) = struct
 	all_ops: op list;
 	check_boxes: check list;
 	tourney: tourney;
-	inner: 'node
+	inner: 'node;
+	filter_box: Dom_html.inputElement Js.t
   }
 
-  let show tourney =
-	let container = Jsutil.getElementById_exn "container" in
-	let inner = Dom_html.createDiv doc in
-	let top = Dom_html.createDiv doc in
-	let domAdd = Dom.appendChild in
-	let add elt = domAdd container elt in
-	let addTop elt = domAdd top elt in
-	let select_and_render state =
-	  delete_children state.inner;
-	  let positive = state.current_check_box in
-	  positive##checked <- Js._true;
-	  List.iter (fun negative -> negative##checked <- Js._false)
-		(List.filter (fun check -> check <> positive ) state.check_boxes);
-	  let filter_func str =
-		let result = Util.contains
-		  (String.lowercase str) (String.lowercase state.filter) in
-		   (*Printf.printf "%b: %s" result str; flush_all (); *)
-		result in
-	  match state.current_op with
-		EGroup (check, espec) ->
-		  let groups = select_grouped espec tourney in
-		  render_groups tourney inner groups espec filter_func
-	  | PGroup (check, pspec) ->
-		let groups = select_grouped pspec tourney in
-		render_groups tourney inner groups pspec filter_func
-	  | _ -> failwith "get_espec"
-	in
-	let middle = Dom_html.createDiv doc in
-	let filter_box = Dom_html.createInput doc in
+  let select_and_render state =
+	delete_children state.inner;
+	let positive = state.current_check_box in
+	positive##checked <- Js._true;
+	List.iter (fun negative -> negative##checked <- Js._false)
+	  (List.filter (fun check -> check <> positive ) state.check_boxes);
+	let filter_func str =
+	  let result = Util.contains
+		(String.lowercase str) (String.lowercase state.filter) in
+		(*Printf.printf "%b: %s" result str; flush_all (); *)
+	  result in
+	match state.current_op with
+	  EGroup (check, espec) ->
+		let groups = select_grouped espec state.tourney in
+		render_groups state.tourney state.inner groups espec filter_func
+	| PGroup (check, pspec) ->
+	  let groups = select_grouped pspec state.tourney in
+	  render_groups state.tourney state.inner groups pspec filter_func
+	| _ -> failwith "get_espec"
+
+  let rec main_loop state =
 	let key input =
 	  Lwt.bind
 		(Lwt_js_events.keyup input)
@@ -434,29 +427,37 @@ module Make(League: League.S) = struct
 		  (fun _ -> Lwt.return g)
 	  | _ -> failwith "bad clicks"
 	in
-	let rec main_loop state =
 	  (* Js.debugger (); *)
-	  let threads =
-		let clicks = (List.map clicks state.all_ops) in
-		(key filter_box) :: clicks in
-	  let triggered = Lwt.pick threads in
-	  Lwt.bind triggered (fun new_op ->
-		let new_state =
-		  match new_op with
-			EGroup (check_box, _) ->
-			  { state with current_check_box = check_box;
-				current_op = new_op }
-		  | PGroup (check_box, _) ->
+	let threads =
+	  let clicks = (List.map clicks state.all_ops) in
+	  (key state.filter_box) :: clicks in
+	let triggered = Lwt.pick threads in
+	Lwt.bind triggered (fun new_op ->
+	  let new_state =
+		match new_op with
+		  EGroup (check_box, _) ->
 			{ state with current_check_box = check_box;
 			  current_op = new_op }
-		  | Key ->
-			let value = (Js.to_string filter_box##value) in
+		| PGroup (check_box, _) ->
+		  { state with current_check_box = check_box;
+			current_op = new_op }
+		| Key ->
+		  let value = (Js.to_string state.filter_box##value) in
 			(* Printf.printf "%s" value; flush_all (); *)
-			{ state with filter = value } in
-		select_and_render new_state;
-		ignore (main_loop new_state);
-		Lwt.return ())
-	in
+		  { state with filter = value } in
+	  select_and_render new_state;
+	  ignore (main_loop new_state);
+	  Lwt.return ())
+
+  let show tourney =
+	let container = Jsutil.getElementById_exn "container" in
+	let inner = Dom_html.createDiv doc in
+	let top = Dom_html.createDiv doc in
+	let domAdd = Dom.appendChild in
+	let add elt = domAdd container elt in
+	let addTop elt = domAdd top elt in
+	let middle = Dom_html.createDiv doc in
+	let filter_box = Dom_html.createInput doc in
 	let enter_main_loop state =
 	  select_and_render state;
 	  main_loop state
@@ -501,7 +502,8 @@ module Make(League: League.S) = struct
 	  all_ops = ops;
 	  check_boxes = checks;
 	  tourney;
-	  inner
+	  inner;
+	  filter_box
 	} in
 
 	ignore(enter_main_loop state)
