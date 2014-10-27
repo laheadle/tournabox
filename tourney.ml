@@ -9,7 +9,7 @@ module type S = sig
 
   val num_rounds: tourney -> int
 
-  val entries: tourney -> e list
+  val entries_list: tourney -> e list
   val num_entries: tourney -> int
 
   val play: entries:string list -> outcomes:string list -> unit
@@ -22,28 +22,18 @@ module Make(League: League.S) = struct
   type e = Entry.t
 
   type round =  int Choice.t array
-  type tourney = { rounds: round array; entries: Entry.t list }
+  type tourney = { rounds: round array;
+				   entries_list: Entry.t list;
+				   entries: (int, Entry.t) Hashtbl.t;
+				   indices: (Entry.t, int) Hashtbl.t
+				 }
   type round_in_progress = e Choice.t list
 
   let index_of_entry entry tourney =
-	let rec find i lst =
-	  match lst with
-		[] -> raise (Invalid_argument "entry not found")
-	  | hd :: tl -> 
-		if hd = entry then i
-		else find (i + 1) tl
-	in
-	find 0 tourney.entries
+	Hashtbl.find tourney.indices entry
 
   let entry_of_index index tourney =
-	let rec find i lst =
-	  match lst with
-		[] -> raise (Invalid_argument "entry not found")
-	  | hd :: tl -> 
-		if i = index then hd
-		else find (i + 1) tl
-	in
-	find 0 tourney.entries
+	Hashtbl.find tourney.entries index
 
   let choice_of_ichoice ichoice tourney =
 	C.map (fun i -> entry_of_index i tourney) ichoice
@@ -75,13 +65,26 @@ module Make(League: League.S) = struct
 			position = p1 })
 	  done
 	in
-	let tourney = { 
-	  entries = entries;
+	let entries_hash = Hashtbl.create 200 in
+	let indices_hash = Hashtbl.create 200 in
+	let rec fill_hash n lst =
+	  match lst with
+		[] -> ()
+	  | hd :: tl ->
+		Hashtbl.add entries_hash n hd;
+		Hashtbl.add indices_hash hd n;
+		fill_hash (n + 1) tl in
+	fill_hash 0 entries;
+	let tourney = {
+	  entries_list = entries;
+	  entries = entries_hash;
+	  indices = indices_hash;
 	  rounds = Array.init num_rounds init_round } in
 	init_first tourney;
 	tourney
 
   let entries tourney = tourney.entries
+  let entries_list tourney = tourney.entries_list
 
   let next_position curr = curr / 2;;
 
@@ -109,7 +112,7 @@ module Make(League: League.S) = struct
 
   let playing tourney entry =
 	let path = path entry tourney in
-	let nth array n = List.nth (Array.to_list array) n in
+	let nth array n = array.(n) in
 	let choices = List.map2 nth (Array.to_list tourney.rounds) path in
 	let rec find lst = match lst with
 	  | [] -> raise (Invalid_argument "no games to win")
@@ -144,17 +147,24 @@ module Make(League: League.S) = struct
 		();
 	  tourney
 	in
-	impl (index_of_entry entry tourney)
-	  (playing tourney (index_of_entry entry tourney))
+	let i = (index_of_entry entry tourney) in
+	impl i (playing tourney i)
 
 
-  let won_str tourney partial =
-	let entry =
-	  Util.pick (entries tourney) partial Entry.to_string
-	in
-	won tourney entry
+  let won_str =
+	let hash = Hashtbl.create 200 in
+	fun tourney partial ->
+	  let entry = (try
+					 Hashtbl.find hash partial
+		with Not_found ->
+		  let entry =
+			Util.pick (entries_list tourney) partial Entry.to_string
+		  in
+		  Hashtbl.add hash partial entry;
+		  entry) in
+	  won tourney entry
 
-  let num_entries tourney = List.length tourney.entries
+  let num_entries tourney = List.length tourney.entries_list
 
   let select_grouped group_spec tourney =
 	let make_choices () = ref [] in
@@ -520,8 +530,10 @@ module Make(League: League.S) = struct
 	in	
 	let entries = List.map make_entry entries in
 	let tourney = init entries in
+	(* let now1 = jsnew Js.date_now () in *)
 	let current_state = List.fold_left won_str tourney outcomes in
-
+	(* let now2 = jsnew Js.date_now () in 
+	Printf.printf "%d secs to win" now2#getMilliseconds; *)
 	(* Tourney.print current_state Tennis_player_entry.to_string *)
 	show current_state
 

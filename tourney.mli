@@ -8,7 +8,7 @@ module type S = sig
 
   val num_rounds: tourney -> int
 
-  val entries: tourney -> e list
+  val entries_list: tourney -> e list
   val num_entries: tourney -> int
 
   val play: entries:string list -> outcomes:string list -> unit
