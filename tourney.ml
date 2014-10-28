@@ -29,6 +29,8 @@ module Make(League: League.S) = struct
 				 }
   type round_in_progress = e Choice.t list
 
+  let (>>=) = Lwt.bind
+
   let index_of_entry entry tourney =
 	Hashtbl.find tourney.indices entry
 
@@ -441,13 +443,10 @@ module Make(League: League.S) = struct
 	let threads =
 	  let clicks = (List.map clicks state.all_ops) in
 	  (key state.filter_box) :: clicks in
-	let triggered = Lwt.pick threads in
-	Lwt.bind triggered (fun new_op ->
+	Lwt.pick threads >>= (fun new_op ->
 	  let new_state =
 		match new_op with
-		  EGroup (check_box, _) ->
-			{ state with current_check_box = check_box;
-			  current_op = new_op }
+		  EGroup (check_box, _)
 		| PGroup (check_box, _) ->
 		  { state with current_check_box = check_box;
 			current_op = new_op }
