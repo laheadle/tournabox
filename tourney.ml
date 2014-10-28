@@ -12,7 +12,7 @@ module type S = sig
   val entries_list: tourney -> e list
   val num_entries: tourney -> int
 
-  val play: entries:string list -> outcomes:string list -> unit
+  val play: entries:string -> outcomes:string -> unit
 end
 
 module Make(League: League.S) = struct
@@ -527,7 +527,10 @@ module Make(League: League.S) = struct
 	  let (player_str, data) = Entry.parse str in
 	  let player = League.pick player_str db in
 	  Entry.make player data
-	in	
+	in
+	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
+	let entries = Regexp.split newline entries in
+	let outcomes = Regexp.split newline outcomes in
 	let entries = List.map make_entry entries in
 	let tourney = init entries in
 	(* let now1 = jsnew Js.date_now () in *)

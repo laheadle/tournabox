@@ -11,7 +11,7 @@ module type S = sig
   val entries_list: tourney -> e list
   val num_entries: tourney -> int
 
-  val play: entries:string list -> outcomes:string list -> unit
+  val play: entries:string -> outcomes:string -> unit
 end
 
 module Make:
