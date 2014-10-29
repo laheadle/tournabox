@@ -260,7 +260,5 @@ wozniacki"
 (*williams, s*)
 ;;
 
-module Tourney = Tourney.Make(WTA.M)
-
 Tourney.play entries outcomes
 

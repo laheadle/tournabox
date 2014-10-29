@@ -1,19 +1,16 @@
 
-module type S = sig
-  type e
 
-  type round_in_progress = e Choice.t list
+type e = Entry.t
 
-  type tourney
+type round_in_progress = e Choice.t list
 
-  val num_rounds: tourney -> int
+type tourney
 
-  val entries_list: tourney -> e list
-  val num_entries: tourney -> int
+val num_rounds: tourney -> int
 
-  val play: entries:string -> outcomes:string -> unit
-end
+val entries_list: tourney -> e list
+val num_entries: tourney -> int
 
-module Make:
-  functor (League: League.S) -> S
+val play: entries:string -> outcomes:string -> unit
+
 

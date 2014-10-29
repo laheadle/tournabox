@@ -1,25 +1,6 @@
 module C = Choice
 
-module type S = sig
-  type e
-
-  type round_in_progress = e Choice.t list
-
-  type tourney
-
-  val num_rounds: tourney -> int
-
-  val entries_list: tourney -> e list
-  val num_entries: tourney -> int
-
-  val play: entries:string -> outcomes:string -> unit
-end
-
-module Make(League: League.S) = struct
-
-  module Entry = Entry.Make(League.Player)
-
-  type e = Entry.t
+type e = Entry.t
 
   type round =  int Choice.t array
   type tourney = { rounds: round array;
@@ -185,7 +166,7 @@ module Make(League: League.S) = struct
 	let add_choice ichoice =
 	  choices :=
 		add_choice_iter
-		(group_spec#convert (convert ichoice))
+		(convert ichoice)
 		!choices
 	in
 	for i = 0 to Array.length tourney.rounds - 1 do
@@ -314,7 +295,6 @@ module Make(League: League.S) = struct
 		  Ttypes.quit = round_matches && already;
 		  this_group = round_matches && not already
 		}
-	  method convert x = x
 	  method column_extractor num pos choice =
 		let extractors = match choice with
 		  | { C.entry_pair = Some a, Some b; winner = Some c } ->
@@ -353,7 +333,6 @@ module Make(League: League.S) = struct
 			| _ -> failwith "Bad existing member")
 		  | _ -> failwith "Bad choice for group")
 	  }
-	  method convert x = x
 	  method column_extractor num pos choice =
 		let extractors =
 		  match choice with
@@ -375,12 +354,10 @@ module Make(League: League.S) = struct
 	 end)
 
   type check = Dom_html.inputElement Js.t
-  type ('a, 'b) gspec = ('a, 'b) Ttypes.converted_grouping_spec
 
   type op =
 	Key
-  | EGroup of check * (Entry.t, Entry.t) gspec
-  | PGroup of check * (Entry.player, Entry.t) gspec
+  | EGroup of check * Entry.t Ttypes.grouping_spec
 
 (*
   let get_espec: 'a 'b. ('a * 'b) -> ('a * 'a)
@@ -418,9 +395,6 @@ module Make(League: League.S) = struct
 	  EGroup (check, espec) ->
 		let groups = select_grouped espec state.tourney in
 		render_groups state.tourney state.inner groups espec filter_func
-	| PGroup (check, pspec) ->
-	  let groups = select_grouped pspec state.tourney in
-	  render_groups state.tourney state.inner groups pspec filter_func
 	| _ -> failwith "get_espec"
 
   let rec main_loop state =
@@ -433,10 +407,6 @@ module Make(League: League.S) = struct
 		Lwt.bind
 		  (Lwt_js_events.click positive)
 		  (fun _ -> Lwt.return g)
-	  | PGroup (positive, _) as g ->
-		Lwt.bind
-		  (Lwt_js_events.click positive)
-		  (fun _ -> Lwt.return g)
 	  | _ -> failwith "bad clicks"
 	in
 	  (* Js.debugger (); *)
@@ -446,10 +416,9 @@ module Make(League: League.S) = struct
 	Lwt.pick threads >>= (fun new_op ->
 	  let new_state =
 		match new_op with
-		  EGroup (check_box, _)
-		| PGroup (check_box, _) ->
-		  { state with current_check_box = check_box;
-			current_op = new_op }
+		  EGroup (check_box, _) ->
+          { state with current_check_box = check_box;
+            current_op = new_op }
 		| Key ->
 		  let value = (Js.to_string state.filter_box##value) in
 			(* Printf.printf "%s" value; flush_all (); *)
@@ -492,17 +461,13 @@ module Make(League: League.S) = struct
 	let (check_performance, by_performance) as perf =
 	  add_group_checkbox (performance_group) in
 	let add = add_group_checkbox in
-	let pspecs = List.map add Entry.player_specs in
-	let especs = List.map add Entry.entry_specs in
+	let especs = List.map add Entry.specs in
 	let emake (check, spec) = EGroup (check, spec) in
 	let (ops, checks) =
 	  let all_especs = round :: perf :: especs in
-	  let pmake (check, spec) = PGroup (check, spec) in
 	  let get_check (check, _) = check in
-	  (List.map emake all_especs @
-		 List.map pmake pspecs),
-	  (List.map get_check all_especs @
-		 List.map get_check pspecs)
+	  (List.map emake all_especs),
+	  (List.map get_check all_especs)
 	in
 	let state = {
 	  filter = "";
@@ -517,20 +482,11 @@ module Make(League: League.S) = struct
 
 	ignore(enter_main_loop state)
 
-
-
-
   let play ~entries ~outcomes =
-	let db = League.make_db () in
-	let make_entry str =
-	  let (player_str, data) = Entry.parse str in
-	  let player = League.pick player_str db in
-	  Entry.make player data
-	in
 	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
 	let entries = Regexp.split newline entries in
 	let outcomes = Regexp.split newline outcomes in
-	let entries = List.map make_entry entries in
+	let entries = List.map Entry.of_string entries in
 	let tourney = init entries in
 	(* let now1 = jsnew Js.date_now () in *)
 	let current_state = List.fold_left won_str tourney outcomes in
@@ -539,4 +495,3 @@ module Make(League: League.S) = struct
 	(* Tourney.print current_state Tennis_player_entry.to_string *)
 	show current_state
 
-end

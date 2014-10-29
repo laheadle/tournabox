@@ -261,7 +261,5 @@ let outcomes = [
 "CILIC, Mari";
 ]
 
-module Tourney = Tourney.Make(ATP.M)
-
 Tourney.play entries outcomes
 

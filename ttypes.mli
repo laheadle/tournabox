@@ -20,8 +20,3 @@ class type ['a] grouping_spec = object
   method in_group: 'a Choice.t -> 'a Choice.t list -> group_result
   method column_extractor: int -> int -> 'a Choice.t -> column list
 end
-
-class type ['a, 'b] converted_grouping_spec = object
-  inherit ['a] grouping_spec
-  method convert: 'b Choice.t -> 'a Choice.t
-end
