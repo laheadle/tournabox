@@ -40,6 +40,8 @@ let of_string str =
   (*  Printf.printf "Player %s" player; flush_all(); *)
   { player; country; seed }
 
+(* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
+
 let by_country = object
   method header_name ~num_rounds ~pos lst =
 	C.extract_first_first lst (fun p -> p.country)

@@ -28,7 +28,7 @@ type e = Entry.t
 	let len = List.length entries in
 	Printf.printf "#entries: %d\n" len;
 	let num_rounds = if Util.power_of_two len then Util.log 2 len
-	  else raise (Invalid_argument "entry length not a power of 2") in
+	  else failwith ("The number of entries must be a power of two") in
 	let empty_ichoice ~(round: int) = {
 	  C.entry_pair=(None,None);
 	  winner=None;
@@ -83,7 +83,7 @@ type e = Entry.t
   let path_intersect winpath losepath =
 	let rec iter i lst1 lst2 =
 	  match lst1, lst2 with
-		[],_ 	| _,[] -> raise (Invalid_argument "bad lengths")
+		[],_ 	| _,[] -> failwith ("BUG: no intersection of paths")
 	  | p1::tail1, p2::tail2 ->
 		if (p1 = p2) then
 		  (* (playedRound, winI) *)
@@ -92,15 +92,17 @@ type e = Entry.t
 		  (iter (i+1) tail1 tail2)
 	in iter 0 winpath losepath 
 
+  let index_to_string tourney index =
+	Entry.to_string (entry_of_index index tourney)
 
-  let playing tourney entry =
-	let path = path entry tourney in
+  let playing tourney index =
+	let path = path index tourney in
 	let nth array n = array.(n) in
 	let choices = List.map2 nth (Array.to_list tourney.rounds) path in
 	let rec find lst = match lst with
-	  | [] -> raise (Invalid_argument "no games to win")
+	  | [] -> failwith ("Error: Player has exited the tourney; they cannot win another game: " ^ index_to_string tourney index)
 	  | { C.entry_pair = (Some x, Some y); winner = None } :: tl
-		-> if x = entry then y else x
+		-> if x = index then y else x
 	  | hd :: tl -> find tl
 	in
 	find choices
@@ -289,8 +291,7 @@ type e = Entry.t
 		let (round_matches, already) = match group with
 			{ C.round = r1; _ } :: _ ->
 			  (choice.C.round = r1), (contains_choice_player group choice)
-		  | _ -> failwith "Invalid group" in
-
+		  | _ -> failwith "BUG: Invalid group, by performance" in
 		{
 		  Ttypes.quit = round_matches && already;
 		  this_group = round_matches && not already
@@ -311,7 +312,7 @@ type e = Entry.t
 			  "will face", (Some "tourney-willFace"), false;
 			  "(To be decided)", None, false ]
 		  | _ ->
-			failwith "bug 4" in
+			failwith "BUG: Invalid Column" in
 		List.map Ttypes.make_column_extractor extractors
 	 end)
 
@@ -321,7 +322,8 @@ type e = Entry.t
 	  method header_name ~num_rounds ~pos lst =
 		C.extract_first_first lst (fun e -> Entry.to_string e)
 	  method compare_choice c1 c2 = -(compare c1 c2)
-	  method compare_group =  fun g1 g2 -> -(C.compare_length_then_first g1 g2)
+	  method compare_group =
+		fun g1 g2 -> -(C.compare_length_then_first g1 g2)
 	  method in_group choice group = {
 		Ttypes.quit = false;
 		this_group =
@@ -330,8 +332,8 @@ type e = Entry.t
 			-> (match group with
 			  { C.entry_pair = (Some b), _ } :: _ ->
 				a = b
-			| _ -> failwith "Bad existing member")
-		  | _ -> failwith "Bad choice for group")
+			| _ -> failwith "BUG: Bad existing member")
+		  | _ -> failwith "BUG: Bad choice for group")
 	  }
 	  method column_extractor num pos choice =
 		let extractors =
@@ -349,7 +351,7 @@ type e = Entry.t
 		  | { C.entry_pair = Some a, None; winner = None } ->
 			[ "will play", None, false;
 			  "To be determined", None, false ]
-		  | _ -> failwith "bug" in
+		  | _ -> failwith "BUG: Invalid Column" in
 		List.map Ttypes.make_column_extractor extractors
 	 end)
 
@@ -359,20 +361,10 @@ type e = Entry.t
 	Key
   | EGroup of check * Entry.t Ttypes.grouping_spec
 
-(*
-  let get_espec: 'a 'b. ('a * 'b) -> ('a * 'a)
-	= fun (x, y) -> (x, x)
-
-  let get_espec: 'a 'b. ('a, 'b) op -> ('a, 'a) gspec
-	= function
-	| Egroup (check, gspec) -> gspec
-	| _ -> failwith "get_espec"
-*)
-
   type 'node state = {
 	filter: string;
 	current_check_box: check;
-	current_op: op;
+	current_egroup: op; (* Egroup *)
 	all_ops: op list;
 	check_boxes: check list;
 	tourney: tourney;
@@ -391,11 +383,11 @@ type e = Entry.t
 		(String.lowercase str) (String.lowercase state.filter) in
 		(*Printf.printf "%b: %s" result str; flush_all (); *)
 	  result in
-	match state.current_op with
+	match state.current_egroup with
 	  EGroup (check, espec) ->
 		let groups = select_grouped espec state.tourney in
 		render_groups state.tourney state.inner groups espec filter_func
-	| _ -> failwith "get_espec"
+	| _ -> failwith "BUG: get_espec"
 
   let rec main_loop state =
 	let key input =
@@ -407,7 +399,7 @@ type e = Entry.t
 		Lwt.bind
 		  (Lwt_js_events.click positive)
 		  (fun _ -> Lwt.return g)
-	  | _ -> failwith "bad clicks"
+	  | _ -> failwith "BUG: bad clicks"
 	in
 	  (* Js.debugger (); *)
 	let threads =
@@ -418,7 +410,7 @@ type e = Entry.t
 		match new_op with
 		  EGroup (check_box, _) ->
           { state with current_check_box = check_box;
-            current_op = new_op }
+            current_egroup = new_op }
 		| Key ->
 		  let value = (Js.to_string state.filter_box##value) in
 			(* Printf.printf "%s" value; flush_all (); *)
@@ -471,7 +463,7 @@ type e = Entry.t
 	let state = {
 	  filter = "";
 	  current_check_box = check_rounds;
-	  current_op = emake (check_rounds, by_round);
+	  current_egroup = emake (check_rounds, by_round);
 	  all_ops = ops;
 	  check_boxes = checks;
 	  tourney;
@@ -524,6 +516,8 @@ type e = Entry.t
 ;;
 
   let all_entries_and_outcomes = get_all () in
-  List.iter (fun (entries, outcomes, container) ->
-	play entries outcomes container)
-	all_entries_and_outcomes
+  try
+	List.iter (fun (entries, outcomes, container) ->
+	  play entries outcomes container)
+	  all_entries_and_outcomes
+  with (Failure str) -> Dom_html.window##alert (Js.string str)

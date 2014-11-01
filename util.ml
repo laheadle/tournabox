@@ -66,9 +66,9 @@ let pick list partial to_string =
   if List.length matching = 1 then
 	List.hd matching
   else
-	raise (Invalid_argument
+	failwith
 			 (List.fold_left 
 				(fun strs thing ->
 				  strs ^ (to_string thing) ^ "; ")
-				("bad thing: " ^ partial ^ " could be: ")
-				matching))
+				("Error: You have provided an invalid outcome: \n" ^ partial ^ "\ncould be:\n")
+				matching)
