@@ -476,12 +476,22 @@ type e = Entry.t
   let play entries outcomes container =
 	(* Printf.printf "%s" outcomes; flush_all (); *)
 	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
-	let all_spaces = Regexp.regexp "^\\s*$" in
-	let not_spaces str = 
+	let not_only_spaces str = 
+	  let all_spaces = Regexp.regexp "^\\s*$" in
 	  match Regexp.search all_spaces str 0 with
 		None -> true | _ -> false in
-	let entries = List.filter not_spaces (Regexp.split newline entries) in
-	let outcomes = List.filter not_spaces (Regexp.split newline outcomes) in
+	let entries = List.filter not_only_spaces (Regexp.split newline entries) in
+	let outcomes = List.filter not_only_spaces (Regexp.split newline outcomes) in
+	let strip_spaces str =
+	  let spaces = Regexp.regexp "^\\s*(.*?)\\s*$" in
+	  let matchs = Regexp.search spaces str 0 in
+	  match matchs with
+		None -> str
+	  | Some (i, result) ->
+		match Regexp.matched_group result 1 with
+		  Some str -> str | None -> assert false in
+	let entries = List.map strip_spaces entries in
+	let outcomes  = List.map strip_spaces outcomes in
 	(* Printf.printf "%d en %d ou" (List.length entries) (List.length outcomes) ; flush_all(); *)
 	let entries = List.map Entry.of_string entries in
 	let tourney = init entries in

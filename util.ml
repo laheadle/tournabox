@@ -70,5 +70,5 @@ let pick list partial to_string =
 			 (List.fold_left 
 				(fun strs thing ->
 				  strs ^ (to_string thing) ^ "; ")
-				("Error: You have provided an invalid outcome: \n" ^ partial ^ "\ncould be:\n")
+				("Error: Invalid winner: \n'" ^ partial ^ "'\nmatches:\n")
 				matching)

@@ -15,10 +15,6 @@ js:
 	js_of_ocaml tourney.byte
 	cp ./tourney.js ./tst.html ~/Downloads/
 
-	#ocamlbuild -cflag -annot -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o men_usopen_2014.byte
-	#js_of_ocaml men_usopen_2014.byte
-
-
 js_maps:
 	ocamlbuild -cflag -g -cflag -annot  -lflag -g -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o women_usopen_2014.byte
 	js_of_ocaml --pretty --debuginfo women_usopen_2014.byte
