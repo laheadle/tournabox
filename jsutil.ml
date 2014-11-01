@@ -1,22 +1,23 @@
 
 let doc = Dom_html.document
 
+let set_classname elt className =
+  match className with
+	None -> ()
+  | Some c -> elt##className <- (Js.string c)
+
 let table className = 
 	let table = Dom_html.createTable doc in
-	(match className with
-	  None -> ()
-	| Some c -> table##className <- (Js.string c));
+	set_classname table className;
 	table
+
+let textNode str = doc##createTextNode (Js.string str)
 
 let addTd tr str className =
   let td = Dom_html.createTd doc in
-  (match className with
-	None -> ()
-  | Some c -> td##className <- (Js.string c));
-  Dom.appendChild td (doc##createTextNode (Js.string str));
+  set_classname td className;
+  Dom.appendChild td (textNode str);
   Dom.appendChild tr td 
-
-let textNode str = doc##createTextNode (Js.string str)
 
 let getElementById_exn id = 
   let c = doc##getElementById (Js.string id) in

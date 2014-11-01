@@ -427,8 +427,7 @@ type e = Entry.t
 	  ignore (main_loop new_state);
 	  Lwt.return ())
 
-  let show tourney =
-	let container = Jsutil.getElementById_exn "container" in
+  let show container tourney =
 	let inner = Dom_html.createDiv doc in
 	let top = Dom_html.createDiv doc in
 	let domAdd = Dom.appendChild in
@@ -482,10 +481,16 @@ type e = Entry.t
 
 	ignore(enter_main_loop state)
 
-  let play ~entries ~outcomes =
+  let play entries outcomes container =
+	(* Printf.printf "%s" outcomes; flush_all (); *)
 	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
-	let entries = Regexp.split newline entries in
-	let outcomes = Regexp.split newline outcomes in
+	let all_spaces = Regexp.regexp "^\\s*$" in
+	let not_spaces str = 
+	  match Regexp.search all_spaces str 0 with
+		None -> true | _ -> false in
+	let entries = List.filter not_spaces (Regexp.split newline entries) in
+	let outcomes = List.filter not_spaces (Regexp.split newline outcomes) in
+	(* Printf.printf "%d en %d ou" (List.length entries) (List.length outcomes) ; flush_all(); *)
 	let entries = List.map Entry.of_string entries in
 	let tourney = init entries in
 	(* let now1 = jsnew Js.date_now () in *)
@@ -493,5 +498,32 @@ type e = Entry.t
 	(* let now2 = jsnew Js.date_now () in 
 	Printf.printf "%d secs to win" now2#getMilliseconds; *)
 	(* Tourney.print current_state Tennis_player_entry.to_string *)
-	show current_state
+	show container current_state
 
+  let assF = (fun () -> assert false)
+
+  let get_all () =
+	let firstChild node =
+	  Js.Opt.get (node##childNodes##item(0)) assF in
+	let textChild node =
+	  let child = firstChild node in
+	  let opt = Dom.CoerceTo.text child in
+	  Js.Opt.get opt assF in
+	let text_of node =
+	  Js.to_string (textChild node)##data in
+	let containers = doc##body##querySelectorAll (Js.string ".tourney-container") in
+	let lst = Dom.list_of_nodeList containers in
+	let mapped = List.map (fun node ->
+	  let id = Js.to_string node##id in
+	  let entries = Jsutil.getElementById_exn (id ^ "-entries") in
+	  let outcomes = Jsutil.getElementById_exn (id ^ "-outcomes") in
+	  (text_of entries, text_of outcomes, node))
+	  lst in
+	(* Printf.printf "%d found" (List.length mapped); flush_all(); *)
+	mapped
+;;
+
+  let all_entries_and_outcomes = get_all () in
+  List.iter (fun (entries, outcomes, container) ->
+	play entries outcomes container)
+	all_entries_and_outcomes

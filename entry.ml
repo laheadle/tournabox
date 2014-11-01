@@ -9,6 +9,8 @@ let to_string entry = Printf.sprintf "%s %s"
   | Some i -> "[" ^ (string_of_int i) ^ "]")
 
 let of_string str =
+  (* Printf.printf "'%s' entry" str ; flush_all(); *)
+
   let name_regex = Regexp.regexp "(^.+) ([A-Z][A-Z][A-Z])" in
   let seed_regex = Regexp.regexp "\\[([0-9]+)\\]$" in
 
