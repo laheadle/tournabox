@@ -43,8 +43,9 @@ let of_string str =
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 
 let by_country = object
-  method header_name ~num_rounds ~pos lst =
-	C.extract_first_first lst (fun p -> p.country)
+  method header_spec ~num_rounds ~pos lst =
+	{ Ttypes.header_str = C.extract_first_first lst (fun p -> p.country);
+	  should_filter_header = true; }
   method name = "By Country";
   method compare_choice c1 c2 =
 	compare (C.first c1).player (C.first c2).player
@@ -62,11 +63,11 @@ let by_country = object
 		  outcome,
 		  (Some (if c = a then "tourney-won" else "tourney-lost")),
 		  false;
-		  (to_string b), None, true]
+		  (to_string b), None, false]
 	  | { C.entry_pair = Some a, Some b; winner = None } ->
 		[  (to_string a), None, true;
 		   "will play", None, false;
-		   (to_string b), None, true ]
+		   (to_string b), None, false ]
 	  | { C.entry_pair = Some a, None; winner = None } ->
 		[]
 	  | _ -> failwith "bug" in
@@ -75,8 +76,10 @@ end
 
 
 let by_seed = object
-  method header_name ~num_rounds ~pos lst =
-	C.extract_first_first lst (fun e -> to_string e)
+  method header_spec ~num_rounds ~pos lst =
+	{ Ttypes.header_str =
+		C.extract_first_first lst (fun e -> to_string e);
+	  should_filter_header = true; }
   method name = "By Seed";
   method compare_choice c1 c2 = -(compare c1 c2)
   method compare_group g1 g2 =
@@ -97,7 +100,7 @@ let by_seed = object
   method in_group choice group = {
 	Ttypes.quit = false;
 	this_group = C.compare_first choice group
-	  (fun e -> (e.seed, to_string e))
+	  (fun e -> e.seed, to_string e)
   }
   method column_extractor num pos choice =
 	let extractors =
@@ -107,11 +110,11 @@ let by_seed = object
 		[ outcome,
 		  (Some (if c = a then "tourney-won" else "tourney-lost")),
 		  false;
-		  (to_string b), None, true]
+		  (to_string b), None, false]
 	  | { C.entry_pair = Some a, Some b; winner = None } ->
 		[ 
 		  "will play", None, false;
-		  (to_string b), None, true ]
+		  (to_string b), None, false ]
 	  | { C.entry_pair = Some a, None; winner = None } ->
 		[]
 	  | _ -> failwith "bug" in

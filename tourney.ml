@@ -202,8 +202,8 @@ type e = Entry.t
 	let num_rounds = num_rounds tourney in
 	let do_choices groupi choices =
 	  let num_choices = List.length choices in
-	  let header_str =
-		grouping_spec#header_name ~num_rounds ~pos:groupi choices in
+	  let { Ttypes.header_str; should_filter_header } =
+		grouping_spec#header_spec ~num_rounds ~pos:groupi choices in
 	  let table = Jsutil.table (Some "tourney-outerTable") in
 	  let header = Dom_html.createTr doc in
 	  Jsutil.addTd header header_str (Some "tourney-header");
@@ -218,10 +218,8 @@ type e = Entry.t
 			(fun { Ttypes.content;
 				   should_filter;
 				   class_name = _ } -> 
-			  if should_filter then 
-				(filter header_str || filter content )
-			  else
-				false)
+			  (should_filter_header && (filter header_str)) ||
+				(should_filter && filter content))
 			columns in
 		if matches then begin
 			has_matches := true;
@@ -271,20 +269,22 @@ type e = Entry.t
   let round_group =
 	(object
 	  method name = "By Round"
-	  method header_name ~num_rounds ~pos:round lst =
-		if round = 0 then
-		  "Finals\n"
-		else
-		  (if round = 1 then
-			  "Semifinals"
-		   else
-			  (if round = 2 then
-				  "Quarterfinals"
-			   else
-				  (Printf.sprintf
-					 "Round %d (%d matches)"
-					 (num_rounds - round)
-					 (List.length lst))))
+	  method header_spec ~num_rounds ~pos:round lst =
+		let header_str =
+		  if round = 0 then
+			"Finals\n"
+		  else
+			(if round = 1 then
+				"Semifinals"
+			 else
+				(if round = 2 then
+					"Quarterfinals"
+				 else
+					(Printf.sprintf
+					   "Round %d (%d matches)"
+					   (num_rounds - round)
+					   (List.length lst)))) in
+		{ Ttypes.header_str; should_filter_header = false }
 	  method compare_choice a b = compare a b
 	  method compare_group = C.compare_length_then_first
 	  method in_group choice group =
@@ -319,8 +319,9 @@ type e = Entry.t
   let performance_group = 
 	(object
 	  method name = "By Performance"
-	  method header_name ~num_rounds ~pos lst =
-		C.extract_first_first lst (fun e -> Entry.to_string e)
+	  method header_spec ~num_rounds ~pos lst =
+		let header_str = C.extract_first_first lst (fun e -> Entry.to_string e) in
+		{ Ttypes.header_str; should_filter_header=true }
 	  method compare_choice c1 c2 = -(compare c1 c2)
 	  method compare_group =
 		fun g1 g2 -> -(C.compare_length_then_first g1 g2)
@@ -343,11 +344,11 @@ type e = Entry.t
 			[ outcome,
 			  Some (if c = a then "tourney-won" else "tourney-lost"),
 			  false;
-			  (Entry.to_string b), None, true;
+			  (Entry.to_string b), None, false;
 			  ("In round " ^ (string_of_int (num - pos))), None, false ]
 		  | { C.entry_pair = Some a, Some b; winner = None } ->
 			[ "will play", None, false;
-			  (Entry.to_string b), None, true ]
+			  (Entry.to_string b), None, false]
 		  | { C.entry_pair = Some a, None; winner = None } ->
 			[ "will play", None, false;
 			  "To be determined", None, false ]
