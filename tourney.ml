@@ -291,7 +291,7 @@ type e = Entry.t
 		let (round_matches, already) = match group with
 			{ C.round = r1; _ } :: _ ->
 			  (choice.C.round = r1), (contains_choice_player group choice)
-		  | _ -> failwith "BUG: Invalid group, by performance" in
+		  | _ -> failwith "BUG: Invalid group, by round" in
 		{
 		  Ttypes.quit = round_matches && already;
 		  this_group = round_matches && not already
