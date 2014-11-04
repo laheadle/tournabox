@@ -24,3 +24,7 @@ let getElementById_exn id =
   Js.Opt.case c (fun () -> failwith ("no element with id " ^ id))
 	(fun node -> node)
 
+let getAttribute_exn node attr =
+  let opt = node##getAttribute (Js.string attr) in
+  let jopt = Js.Opt.get opt (fun _ -> raise Not_found) in
+  Js.to_string jopt

@@ -1,5 +1,8 @@
 module C = Choice
 
+let report_error str = Dom_html.window##alert (Js.string str)
+
+
 type e = Entry.t
 
   type round =  int Choice.t array
@@ -420,7 +423,41 @@ type e = Entry.t
 	  ignore (main_loop new_state);
 	  Lwt.return ())
 
-  let show container tourney =
+  let chosen_specs groups_requested =
+	let all = [ round_group; performance_group; ] @ Entry.specs in
+	let invalid =
+	  List.filter
+		(fun group_name ->
+		  not (List.exists
+				 (fun spec -> group_name = spec#name) all))
+		groups_requested in
+	let () = if List.length invalid > 0 then
+		ignore(report_error 
+				 (let msg =
+					List.fold_left
+					  (fun str1 str2 -> Printf.sprintf "%s %s" str1 str2)
+					  ""
+					  invalid in
+				  "Invalid Group: '"^msg^"'"))
+	in
+	  (* ensure proper ordering *)
+	let valid =
+	  List.filter
+		(fun group_name ->
+		  (List.exists
+			 (fun spec -> group_name = spec#name) all))
+		groups_requested in
+	List.map
+	  (fun valid ->
+		List.find
+		  (fun spec -> valid = spec#name) all)
+	  valid 
+
+  let enter_main_loop state =
+	select_and_render state;
+	main_loop state
+
+  let show container groups_requested tourney =
 	let inner = Dom_html.createDiv doc in
 	let top = Dom_html.createDiv doc in
 	let domAdd = Dom.appendChild in
@@ -428,15 +465,11 @@ type e = Entry.t
 	let addTop elt = domAdd top elt in
 	let middle = Dom_html.createDiv doc in
 	let filter_box = Dom_html.createInput doc in
-	let enter_main_loop state =
-	  select_and_render state;
-	  main_loop state
-	in
 	let add_group_checkbox group_spec =
-	  let checkGroup = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+	  let check_group = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
 	  Jsutil.textNode group_spec#name |> addTop;
-	  addTop checkGroup;
-	  (checkGroup, group_spec)
+	  addTop check_group;
+	  (check_group, group_spec)
 	in
 	let filter_span = Dom_html.createSpan doc in
 	let _ =
@@ -449,32 +482,23 @@ type e = Entry.t
 	  filter_span##className <- (Js.string "tourney-filterBox");
 	  domAdd filter_span filter_box;
 	  domAdd top filter_span; in
-	let (check_rounds, by_round) as round = add_group_checkbox round_group in
-	let (check_performance, by_performance) as perf =
-	  add_group_checkbox (performance_group) in
 	let add = add_group_checkbox in
-	let especs = List.map add Entry.specs in
+	let especs = List.map add (chosen_specs groups_requested) in
 	let emake (check, spec) = EGroup (check, spec) in
-	let (ops, checks) =
-	  let all_especs = round :: perf :: especs in
-	  let get_check (check, _) = check in
-	  (List.map emake all_especs),
-	  (List.map get_check all_especs)
-	in
+	let get_check (check, _) = check in
 	let state = {
 	  filter = "";
-	  current_check_box = check_rounds;
-	  current_egroup = emake (check_rounds, by_round);
-	  all_ops = ops;
-	  check_boxes = checks;
+	  current_check_box = get_check (Util.hd_exn especs);
+	  current_egroup = emake (Util.hd_exn especs);
+	  all_ops = List.map emake especs;
+	  check_boxes = List.map get_check especs;
 	  tourney;
 	  inner;
 	  filter_box
 	} in
-
 	ignore(enter_main_loop state)
 
-  let play entries outcomes container =
+  let play entries outcomes groups_requested container =
 	(* Printf.printf "%s" outcomes; flush_all (); *)
 	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
 	let not_only_spaces str = 
@@ -483,25 +507,23 @@ type e = Entry.t
 		None -> true | _ -> false in
 	let entries = List.filter not_only_spaces (Regexp.split newline entries) in
 	let outcomes = List.filter not_only_spaces (Regexp.split newline outcomes) in
-	let strip_spaces str =
-	  let spaces = Regexp.regexp "^\\s*(.*?)\\s*$" in
-	  let matchs = Regexp.search spaces str 0 in
-	  match matchs with
-		None -> str
-	  | Some (i, result) ->
-		match Regexp.matched_group result 1 with
-		  Some str -> str | None -> assert false in
-	let entries = List.map strip_spaces entries in
-	let outcomes  = List.map strip_spaces outcomes in
+	let entries = List.map Util.strip_spaces entries in
+	let outcomes  = List.map Util.strip_spaces outcomes in
 	(* Printf.printf "%d en %d ou" (List.length entries) (List.length outcomes) ; flush_all(); *)
-	let entries = List.map Entry.of_string entries in
+	let entry_of_string =
+	  let expect_country =
+		List.exists
+		  (fun str -> str = "By Country")
+		  groups_requested in
+	  fun str -> Entry.of_string ~expect_country str in
+	let entries = List.map entry_of_string entries in
 	let tourney = init entries in
 	(* let now1 = jsnew Js.date_now () in *)
 	let current_state = List.fold_left won_str tourney outcomes in
 	(* let now2 = jsnew Js.date_now () in 
 	Printf.printf "%d secs to win" now2#getMilliseconds; *)
 	(* Tourney.print current_state Tennis_player_entry.to_string *)
-	show container current_state
+	show container groups_requested current_state
 
   let assF = (fun () -> assert false)
 
@@ -515,20 +537,38 @@ type e = Entry.t
 	let text_of node =
 	  Js.to_string (textChild node)##data in
 	let containers = doc##body##querySelectorAll (Js.string ".tourney-container") in
-	let lst = Dom.list_of_nodeList containers in
-	let mapped = List.map (fun node ->
+	let get_one node =
 	  let id = Js.to_string node##id in
+	  let space_comma_space = Regexp.regexp "\\s*,\\s*" in
+	  let groups_requested_str =
+		try
+		  Jsutil.getAttribute_exn node "tourney-groups"
+		with _ ->
+		  let all_group_names = "By Round,By Seed, By Country, By Performance" in
+		  all_group_names
+	  in
+	  let groups_requested = Regexp.split space_comma_space groups_requested_str in
 	  let entries = Jsutil.getElementById_exn (id ^ "-entries") in
 	  let outcomes = Jsutil.getElementById_exn (id ^ "-outcomes") in
-	  (text_of entries, text_of outcomes, node))
-	  lst in
+	  (text_of entries, text_of outcomes, groups_requested, node) in
+	let get_one node =
+	  try
+		Some (get_one node)
+	  with (Failure str) -> report_error str; None in
+	let lst = Dom.list_of_nodeList containers in
+	let mapped = List.map get_one lst in
 	(* Printf.printf "%d found" (List.length mapped); flush_all(); *)
 	mapped
 ;;
 
-  let all_entries_and_outcomes = get_all () in
-  try
-	List.iter (fun (entries, outcomes, container) ->
-	  play entries outcomes container)
-	  all_entries_and_outcomes
-  with (Failure str) -> Dom_html.window##alert (Js.string str)
+  let unwrap_option = function Some x -> x | None -> assert false in
+  let somes = function None -> false | Some _ -> true in
+  let all = Util.filter_then_map
+	~mapf:unwrap_option ~filterf:somes
+	(get_all ()) in
+  List.iter
+	(fun (entries, outcomes, groups_requested, container) ->
+	  try
+		play entries outcomes groups_requested container
+	  with (Failure str) -> report_error str)
+	all

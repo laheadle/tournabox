@@ -1,4 +1,8 @@
 
+let map_option f =
+  function None -> None
+  | Some x -> Some (f x)
+
 (* integer exponentiation *)
 let rec pow a = function
   | 0 -> 1
@@ -58,6 +62,17 @@ let contains s1 s2 =
 	else
 	  try_all start
 
+let strip_spaces str =
+  let spaces = Regexp.regexp "^\\s*(.*?)\\s*$" in
+  let matchs = Regexp.search spaces str 0 in
+  match matchs with
+	None -> str
+  | Some (i, result) ->
+	match Regexp.matched_group result 1 with
+	  Some str -> str | None -> assert false
+
+
+let hd_exn = function [] -> assert false | a :: b -> a
 
 let pick list partial to_string =
   let up = String.uppercase in
@@ -72,3 +87,8 @@ let pick list partial to_string =
 				  strs ^ (to_string thing) ^ "; ")
 				("Error: Invalid winner: \n'" ^ partial ^ "'\nmatches:\n")
 				matching)
+
+let id x = x
+
+let filter_then_map ~mapf ~filterf lst =
+  List.map mapf (List.filter filterf lst)

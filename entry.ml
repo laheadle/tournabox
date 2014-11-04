@@ -1,50 +1,64 @@
 module C = Choice
 
-type t = { player: string; country: string; seed: int option }
+type t = { player: string; country: string option; seed: int option }
 type column = string * string option
 
-let to_string entry = Printf.sprintf "%s %s"
-  (entry.player ^ " " ^ entry.country)
-  (match entry.seed with None -> ""
-  | Some i -> "[" ^ (string_of_int i) ^ "]")
+let to_string entry =
+  let country_str = match entry.country with None->""
+	| Some x -> " " ^ x in
+  let seed_str =
+	(match entry.seed with None -> ""
+	| Some i -> "[" ^ (string_of_int i) ^ "]") in
+  Printf.sprintf "%s %s"
+  (entry.player ^ country_str)
+	seed_str
 
-let of_string str =
-  (* Printf.printf "'%s' entry" str ; flush_all(); *)
-
-  let name_regex = Regexp.regexp "(^.+) ([A-Z][A-Z][A-Z])" in
-  let seed_regex = Regexp.regexp "\\[([0-9]+)\\]$" in
-
-  let get_seed str =
-	match Regexp.search_forward seed_regex str 0 with
-	  None -> raise Not_found
-	| Some (i, result) -> int_of_string
-	  (match Regexp.matched_group result 1 with None -> raise Not_found | Some x -> x)
-  in
-  let parse_name str =
-	match Regexp.string_match name_regex str 0 with
-	  None -> raise Not_found
+let of_string ?(expect_country=true) str =
+  let begin_and_end regex str convert =
+	  match Regexp.search regex str 0 with
+		None -> assert false
+	  | Some (i, result) ->
+		let matched n = Regexp.matched_group result n in
+		let ending = Util.map_option convert (matched 3) in
+		let beginning =
+		  (match matched 1 with None -> assert false | Some x -> x) in
+		Util.strip_spaces beginning, ending
+	in
+  let ends_with_attribute_regex = Regexp.regexp "(^[^\\(]*)(\\(([a-zA-Z])\\)$)?" in
+  let all_but_attribute, attribute =
+	begin_and_end ends_with_attribute_regex str Util.id in
+  let attribute = match attribute with None -> "" | Some s -> s in
+  let ends_with_seed_regex = Regexp.regexp "(^[^\\[]*)(\\[([0-9]+)\\]$)?" in
+  let all_but_seed, seed =
+	begin_and_end ends_with_seed_regex all_but_attribute int_of_string in
+  let get_player_with_country () =
+	let name_regex = Regexp.regexp "(^.+) ([A-Z][A-Z][A-Z])$" in
+	match Regexp.string_match name_regex all_but_seed 0 with
 	| Some result -> 
-	  match Regexp.matched_group result 1,
+	  (match Regexp.matched_group result 1,
 		Regexp.matched_group result 2 with
-		 Some x, Some y -> x, y
-		| _ -> raise Not_found
+		  Some x, Some y -> (x, Some y)
+		| _ -> assert false)
+	| None -> let _ = (failwith ("Invalid Name and Country: '" ^ all_but_seed ^"'"))
+			  in "", None (* wtf ? *)
+	in
+  let get_player () = all_but_seed in
+  let player, country =
+	if expect_country then
+	  get_player_with_country ()
+	else
+	  get_player (), None
   in
-  let seed =
-	try
-	  Some (get_seed str)
-	with Not_found ->
-	  None
-  in
-  (*  Printf.printf "Parse %s" str; flush_all(); *)
-  let player, country = parse_name str in
-  (*  Printf.printf "Player %s" player; flush_all(); *)
-  { player; country; seed }
+  let attribute = if attribute = "" then attribute
+	else Printf.sprintf " (%s)" attribute in
+  { player = player ^ attribute ; country; seed }
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
-
 let by_country = object
   method header_spec ~num_rounds ~pos lst =
-	{ Ttypes.header_str = C.extract_first_first lst (fun p -> p.country);
+	{ Ttypes.header_str = C.extract_first_first lst
+		(fun p -> match p.country with None -> assert false
+		| Some c -> c);
 	  should_filter_header = true; }
   method name = "By Country";
   method compare_choice c1 c2 =
