@@ -21,7 +21,7 @@ let addTd tr str className =
 
 let getElementById_exn id = 
   let c = doc##getElementById (Js.string id) in
-  Js.Opt.case c (fun () -> failwith ("no element with id " ^ id))
+  Js.Opt.case c (fun () -> failwith ("There is no element with id " ^ id))
 	(fun node -> node)
 
 let getAttribute_exn node attr =

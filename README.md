@@ -1,36 +1,7 @@
-player groups:
 
-- 1 special protocol for players
-
-- 2 entries access player fields
-- 3 put entry/player in same module
-
-DISTRIBUTION
-============
-
-src/lib/
- - core tourney, entry files
-
-src/tennis
- - Tennis Player DB
-
-src/tennis/tourneys/us_open
- -2014.ml
-
-html/tourneys/us_open
- -2014.js
-
----
 
 levels: tourney [name, date], round[number], decision[date, entries, winner,loser], entry[seed], player[name, country, gender]
 
-most important ops:
-
-1 - group by: player (performance descending) or round (descending)
-2 - filter by name 
-3 - group by Player.country
-3 - filter by country
-3 - group by: player (seed, name ascending)
 
 columns
 

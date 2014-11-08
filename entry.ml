@@ -55,7 +55,7 @@ let of_string ?(expect_country=true) str =
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let by_country = object
-  method header_spec ~num_rounds ~pos lst =
+  method header_spec ~num_rounds ~num_groups ~pos:round lst =
 	{ Ttypes.header_str = C.extract_first_first lst
 		(fun p -> match p.country with None -> assert false
 		| Some c -> c);
@@ -71,26 +71,33 @@ let by_country = object
   method column_extractor num pos choice =
 	let extractors =
 	  match choice with
-	  | { C.entry_pair = Some a, Some b; winner = Some c } ->
+	  | { C.entry_pair = Some a, Some b; winner = Some c; round } ->
 		let outcome = if c = a then "Defeated" else "Was defeated by" in
 		[ (to_string a), None, true;
 		  outcome,
 		  (Some (if c = a then "tourney-won" else "tourney-lost")),
 		  false;
-		  (to_string b), None, false]
-	  | { C.entry_pair = Some a, Some b; winner = None } ->
+		  (to_string b), None, false;
+		  "In round " ^ string_of_int (round + 1), None, false]
+	  | { C.entry_pair = Some a, Some b; winner = None ; round } ->
 		[  (to_string a), None, true;
-		   "will play", None, false;
-		   (to_string b), None, false ]
-	  | { C.entry_pair = Some a, None; winner = None } ->
-		[]
+		   "Will Face", (Some "tourney-willFace"), false;
+		   (to_string b), None, false;
+		  "In round " ^ string_of_int (round + 1), None, false ]
+	  | { C.entry_pair = Some a, None; winner = None ; round } ->
+		[
+		  (to_string a), None, true;
+		  "Will face", (Some "tourney-willFace"), false;
+		  "To Be Determined", None, false;
+		  "In round " ^ string_of_int (round + 1), None, false
+		]
 	  | _ -> failwith "bug" in
 	List.map Ttypes.make_column_extractor extractors
 end
 
 
 let by_seed = object
-  method header_spec ~num_rounds ~pos lst =
+  method header_spec ~num_rounds ~num_groups ~pos:round lst =
 	{ Ttypes.header_str =
 		C.extract_first_first lst (fun e -> to_string e);
 	  should_filter_header = true; }
@@ -124,13 +131,20 @@ let by_seed = object
 		[ outcome,
 		  (Some (if c = a then "tourney-won" else "tourney-lost")),
 		  false;
-		  (to_string b), None, false]
+		  (to_string b), None, false;
+		  ("In round " ^ (string_of_int (num - pos))), None, false ]
 	  | { C.entry_pair = Some a, Some b; winner = None } ->
-		[ 
-		  "will play", None, false;
-		  (to_string b), None, false ]
+		[
+		  "Will face", (Some "tourney-willFace"), false;
+		  (to_string b), None, false;
+		  ("In round " ^ (string_of_int (num - pos))), None, false
+ ]
 	  | { C.entry_pair = Some a, None; winner = None } ->
-		[]
+		[
+		  "Will face", (Some "tourney-willFace"), false;
+		  "To be determined", None, false;
+		  ("In round " ^ (string_of_int (num - pos))), None, false
+		]
 	  | _ -> failwith "bug" in
 	List.map Ttypes.make_column_extractor extractors
 end

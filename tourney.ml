@@ -24,14 +24,19 @@ type e = Entry.t
   let choice_of_ichoice ichoice tourney =
 	C.map (fun i -> entry_of_index i tourney) ichoice
 
+  let log_2 len =
+	if Util.power_of_two len then Util.log 2 len
+	else failwith ("The number of entries must be a power of two")
+	
   let num_rounds tourney =
-	Array.length tourney.rounds
+	let len = Array.length tourney.rounds.(0) in
+	Printf.printf "%d rounds" (log_2 len);
+	log_2 len + 1
 
   let init entries =
 	let len = List.length entries in
 	Printf.printf "#entries: %d\n" len;
-	let num_rounds = if Util.power_of_two len then Util.log 2 len
-	  else failwith ("The number of entries must be a power of two") in
+	let num_rounds = log_2 len in
 	let empty_ichoice ~(round: int) = {
 	  C.entry_pair=(None,None);
 	  winner=None;
@@ -203,10 +208,11 @@ type e = Entry.t
 
   let render_groups tourney container groups grouping_spec (filter: string -> bool) =
 	let num_rounds = num_rounds tourney in
+	let num_groups = List.length groups in
 	let do_choices groupi choices =
 	  let num_choices = List.length choices in
 	  let { Ttypes.header_str; should_filter_header } =
-		grouping_spec#header_spec ~num_rounds ~pos:groupi choices in
+		grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
 	  let table = Jsutil.table (Some "tourney-outerTable") in
 	  let header = Dom_html.createTr doc in
 	  Jsutil.addTd header header_str (Some "tourney-header");
@@ -272,21 +278,20 @@ type e = Entry.t
   let round_group =
 	(object
 	  method name = "By Round"
-	  method header_spec ~num_rounds ~pos:round lst =
+	  method header_spec ~num_rounds ~num_groups ~pos:round lst =
+		let len = List.length lst in
+		let unplayed = num_rounds - num_groups in
+		let this_round = unplayed + round in
 		let header_str =
-		  if round = 0 then
-			"Finals\n"
-		  else
-			(if round = 1 then
-				"Semifinals"
-			 else
-				(if round = 2 then
-					"Quarterfinals"
-				 else
-					(Printf.sprintf
-					   "Round %d (%d matches)"
-					   (num_rounds - round)
-					   (List.length lst)))) in
+		  match this_round with
+			0 -> "Finals\n"
+		  | 1 -> "Semifinals"
+		  | 2 -> "Quarterfinals"
+		  | _ -> (Printf.sprintf
+					"Round %d (%d matches)"
+					(num_rounds - this_round)
+					len)
+		in
 		{ Ttypes.header_str; should_filter_header = false }
 	  method compare_choice a b = compare a b
 	  method compare_group = C.compare_length_then_first
@@ -322,7 +327,7 @@ type e = Entry.t
   let performance_group = 
 	(object
 	  method name = "By Performance"
-	  method header_spec ~num_rounds ~pos lst =
+	  method header_spec ~num_rounds ~num_groups ~pos:round lst =
 		let header_str = C.extract_first_first lst (fun e -> Entry.to_string e) in
 		{ Ttypes.header_str; should_filter_header=true }
 	  method compare_choice c1 c2 = -(compare c1 c2)
@@ -350,10 +355,10 @@ type e = Entry.t
 			  (Entry.to_string b), None, false;
 			  ("In round " ^ (string_of_int (num - pos))), None, false ]
 		  | { C.entry_pair = Some a, Some b; winner = None } ->
-			[ "will play", None, false;
+			[ "Will face", Some "tourney-willFace", false;
 			  (Entry.to_string b), None, false]
 		  | { C.entry_pair = Some a, None; winner = None } ->
-			[ "will play", None, false;
+			[ "Will face", Some "tourney-willFace", false;
 			  "To be determined", None, false ]
 		  | _ -> failwith "BUG: Invalid Column" in
 		List.map Ttypes.make_column_extractor extractors
@@ -473,7 +478,7 @@ type e = Entry.t
 	in
 	let filter_span = Dom_html.createSpan doc in
 	let _ =
-	  top##className <- (Js.string "tourney-menuDiv");
+	  top##className <- (Js.string "tourney-menu");
 	  add top;
 	  add middle;
 	  domAdd container middle;
@@ -525,49 +530,62 @@ type e = Entry.t
 	(* Tourney.print current_state Tennis_player_entry.to_string *)
 	show container groups_requested current_state
 
-  let assF = (fun () -> assert false)
+  exception Not_text
 
-  let get_all () =
+  type 'node tourney_spec = {
+	entries: string;
+	outcomes:  string;
+	groups_requested: string list;
+	container: 'node;
+  }
+
+  let get_all_tourney_specs () =
 	let firstChild node =
-	  Js.Opt.get (node##childNodes##item(0)) assF in
+	  Js.Opt.get (node##childNodes##item(0)) (fun () -> raise Not_found) in
 	let textChild node =
 	  let child = firstChild node in
 	  let opt = Dom.CoerceTo.text child in
-	  Js.Opt.get opt assF in
-	let text_of node =
-	  Js.to_string (textChild node)##data in
-	let containers = doc##body##querySelectorAll (Js.string ".tourney-container") in
-	let get_one node =
-	  let id = Js.to_string node##id in
+	  Js.Opt.get opt (fun () -> raise Not_text)  in
+	let text_of node_name =
+	  let node = Jsutil.getElementById_exn node_name in
+	  try
+		Js.to_string (textChild node)##data
+	  with
+		Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_name)
+	  | Not_found -> ""
+	in
+	let get_one container =
 	  let space_comma_space = Regexp.regexp "\\s*,\\s*" in
 	  let groups_requested_str =
 		try
-		  Jsutil.getAttribute_exn node "tourney-groups"
+		  Jsutil.getAttribute_exn container "tourney-groups"
 		with _ ->
-		  let all_group_names = "By Round,By Seed, By Country, By Performance" in
+		  let all_group_names = "By Round,By Performance, By Country, By Seed" in
 		  all_group_names
 	  in
 	  let groups_requested = Regexp.split space_comma_space groups_requested_str in
-	  let entries = Jsutil.getElementById_exn (id ^ "-entries") in
-	  let outcomes = Jsutil.getElementById_exn (id ^ "-outcomes") in
-	  (text_of entries, text_of outcomes, groups_requested, node) in
+	  let id = Js.to_string container##id in
+	  let entries = text_of (id ^ "-entries") in
+	  let outcomes = text_of (id ^ "-outcomes") in
+	   { entries; outcomes; groups_requested; container } in
 	let get_one node =
 	  try
 		Some (get_one node)
 	  with (Failure str) -> report_error str; None in
+	let containers = doc##body##querySelectorAll (Js.string ".tourney-container") in
 	let lst = Dom.list_of_nodeList containers in
 	let mapped = List.map get_one lst in
 	(* Printf.printf "%d found" (List.length mapped); flush_all(); *)
 	mapped
-;;
+  ;;
 
   let unwrap_option = function Some x -> x | None -> assert false in
   let somes = function None -> false | Some _ -> true in
   let all = Util.filter_then_map
 	~mapf:unwrap_option ~filterf:somes
-	(get_all ()) in
+	(get_all_tourney_specs ()) in
   List.iter
-	(fun (entries, outcomes, groups_requested, container) ->
+	(fun { entries; outcomes; groups_requested; container } ->
 	  try
 		play entries outcomes groups_requested container
 	  with (Failure str) -> report_error str)

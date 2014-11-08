@@ -30,7 +30,7 @@ let compare_length_then_first g1 g2 =
 	  let awon = (aw = a) in
 	  let bwon = (bw = b) in
 	  if awon = bwon then
-		compare a b
+		-(compare a b)
 	  else
 		compare awon bwon
   | _ -> failwith "bad group compare")

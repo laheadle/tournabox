@@ -17,7 +17,7 @@ type header_spec = {
 
 class type ['a] grouping_spec = object
   method name:string
-  method header_spec: num_rounds:int -> pos:int -> 'a Choice.t list -> header_spec
+  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> 'a Choice.t list -> header_spec
   method compare_choice: 'a Choice.t -> 'a Choice.t -> int
   method compare_group: 'a Choice.t list -> 'a Choice.t list -> int
   method in_group: 'a Choice.t -> 'a Choice.t list -> group_result
