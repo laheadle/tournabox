@@ -58,7 +58,13 @@ let by_country = object
   method header_spec ~num_rounds ~num_groups ~pos:round lst =
 	{ Ttypes.header_str = C.extract_first_first lst
 		(fun p -> match p.country with None -> assert false
-		| Some c -> c);
+		| Some c ->
+		  (* Printf.printf "%s -" c; flush_all(); *)
+		  try
+			let country = List.assoc c Countries.codes in
+			country
+		  with _ -> c
+		);
 	  should_filter_header = true; }
   method name = "By Country";
   method compare_choice c1 c2 =
