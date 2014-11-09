@@ -206,7 +206,16 @@ type e = Entry.t
 
   let doc = Dom_html.document
 
-  let render_groups tourney container groups grouping_spec (filter: string -> bool) =
+  type or_filter = (string -> bool) list
+
+  let or_filter_matches or_filter str =
+	let rec iter = function
+	  | [] -> false
+	  | f :: fs -> f str || iter fs
+	in
+	iter or_filter
+
+  let render_groups tourney container groups grouping_spec (filter: or_filter) =
 	let num_rounds = num_rounds tourney in
 	let num_groups = List.length groups in
 	let do_choices groupi choices =
@@ -215,6 +224,7 @@ type e = Entry.t
 		grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
 	  let table = Jsutil.table (Some "tourney-outerTable") in
 	  let header = Dom_html.createTr doc in
+	  header##className <- "tourney-header-row";
 	  Jsutil.addTd header header_str (Some "tourney-header");
 	  Dom.appendChild table header;
 	  let has_matches = ref false in
@@ -227,14 +237,17 @@ type e = Entry.t
 			(fun { Ttypes.content;
 				   should_filter;
 				   class_name = _ } -> 
-			  (should_filter_header && (filter header_str)) ||
-				(should_filter && filter content))
+			  (should_filter_header && (or_filter_matches filter header_str)) ||
+				(should_filter && or_filter_matches filter content))
 			columns in
 		if matches then begin
-			has_matches := true;
-			List.iter (fun { Ttypes.class_name; content } -> Jsutil.addTd row content class_name) columns;
-			Dom.appendChild table row
-		  end
+		  has_matches := true;
+		  List.iter
+			(fun { Ttypes.class_name; content } ->
+			  Jsutil.addTd row content class_name)
+			columns;
+		  Dom.appendChild table row
+		end
 	  in
 	  List.iteri do_choice choices;
 	  if !has_matches then begin
@@ -387,15 +400,20 @@ type e = Entry.t
 	positive##checked <- Js._true;
 	List.iter (fun negative -> negative##checked <- Js._false)
 	  (List.filter (fun check -> check <> positive ) state.check_boxes);
-	let filter_func str =
-	  let result = Util.contains
-		(String.lowercase str) (String.lowercase state.filter) in
+	let filter =
+	  let commas = Regexp.regexp "\\s*,\\s*" in
+	  let all_filter_strs = Regexp.split commas state.filter in
+	  let make_func filter = fun str ->
+		let result = Util.contains
+		  (String.lowercase str) (String.lowercase filter) in
 		(*Printf.printf "%b: %s" result str; flush_all (); *)
-	  result in
+		result in
+	  List.map make_func all_filter_strs
+	in
 	match state.current_egroup with
 	  EGroup (check, espec) ->
 		let groups = select_grouped espec state.tourney in
-		render_groups state.tourney state.inner groups espec filter_func
+		render_groups state.tourney state.inner groups espec filter
 	| _ -> failwith "BUG: get_espec"
 
   let rec main_loop state =
