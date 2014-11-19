@@ -224,7 +224,7 @@ type e = Entry.t
 		grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
 	  let table = Jsutil.table (Some "tourney-outerTable") in
 	  let header = Dom_html.createTr doc in
-	  header##className <- "tourney-header-row";
+	  header##className <- Js.string "tourney-header-row";
 	  Jsutil.addTd header header_str (Some "tourney-header");
 	  Dom.appendChild table header;
 	  let has_matches = ref false in
