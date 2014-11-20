@@ -1,28 +1,35 @@
 
-# What is This?
+# What is tournabox?
 
-A web widget for showing results of single elimination
-tournaments. Publishers specify players and winners by simply entering
-text into the HTML page. All code is client-side; no server-side
-programming is needed.
+A web widget for showing results of single elimination tournaments.
+Visitors can change how results are grouped and filtered. Publishers
+specify players and winners by entering text into the HTML page. All
+code is client-side; no server-side programming is needed.
 
 ## Features
 
+Supports any sport or game.
+
+Shows completed tournaments or in-progress ones.
+
+Shows multiple tournaments on one web page.
+
+Dynamic display allows visitors to view results in different ways:
+
 Group results by:
- - Round
+ - Round (latest round on top)
  - Performance (best performing players on top)
- - (optional) Country: All players from a country shown together
- - Seed
- - Publishers can choose to display fewer groups to zero in on one facet of the tournament
+ - Country: All players from a country shown together
+ - Seed (Highest seed on top, then unseeded players grouped by performance)
 
 Filter results
- - reader can show only results matching text typed into in a text input
- - publisher can initialize the filter to zero in on specific results
- - reader or publisher can separate multiple filters by ','
+ - Visitor can show only those results matching text typed into a text input
+ - Separate multiple filters by ','
 
-Show completed tournaments or in-progress ones.
+To reduce clutter and increase focus, publishers can set display options:
 
-Show multiple tournaments on one web page.
+ - choose to display fewer groups, e.g. Round only
+ - Initialize the filter to show specific players or groups
 
 Winners can be abbreviated to reduce typing: e.g. "Serena" instead of
 "Serena Williams"

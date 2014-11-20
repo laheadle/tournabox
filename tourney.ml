@@ -489,9 +489,12 @@ type e = Entry.t
 	let middle = Dom_html.createDiv doc in
 	let filter_box = Dom_html.createInput doc in
 	let add_group_checkbox group_spec =
+	  let check_span = Dom_html.createSpan doc in
 	  let check_group = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-	  Jsutil.textNode group_spec#name |> addTop;
-	  addTop check_group;
+	  Jsutil.textNode group_spec#name |> (domAdd check_span);
+	  domAdd check_span check_group;
+	  check_span##className <- (Js.string "tourney-menu-checkspan");
+	  addTop check_span;
 	  (check_group, group_spec)
 	in
 	let filter_span = Dom_html.createSpan doc in
