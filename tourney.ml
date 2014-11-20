@@ -356,10 +356,11 @@ let chosen_specs groups_requested =
 	valid 
 
 let enter_main_loop state =
+  state.filter_box##value <- (Js.string state.filter);
   select_and_render state;
   main_loop state
 
-let show container groups_requested tourney =
+let show container groups_requested filters_requested tourney =
   let inner = Dom_html.createDiv doc in
   let top = Dom_html.createDiv doc in
   let domAdd = Dom.appendChild in
@@ -392,7 +393,7 @@ let show container groups_requested tourney =
   let emake (check, spec) = EGroup (check, spec) in
   let get_check (check, _) = check in
   let state = {
-	filter = "";
+	filter = filters_requested;
 	current_check_box = get_check (Util.hd_exn especs);
 	current_egroup = emake (Util.hd_exn especs);
 	all_ops = List.map emake especs;
@@ -403,41 +404,46 @@ let show container groups_requested tourney =
   } in
   ignore(enter_main_loop state)
 
-let play entries outcomes groups_requested container =
-	(* Printf.printf "%s" outcomes; flush_all (); *)
-  let newline = Regexp.regexp "\n|\\(\r\n\\)" in
-  let not_only_spaces str = 
-	let all_spaces = Regexp.regexp "^\\s*$" in
-	match Regexp.search all_spaces str 0 with
-	  None -> true | _ -> false in
-  let entries = List.filter not_only_spaces (Regexp.split newline entries) in
-  let outcomes = List.filter not_only_spaces (Regexp.split newline outcomes) in
-  let entries = List.map Util.strip_spaces entries in
-  let outcomes  = List.map Util.strip_spaces outcomes in
-	(* Printf.printf "%d en %d ou" (List.length entries) (List.length outcomes) ; flush_all(); *)
-  let entry_of_string =
-	let expect_country =
-	  List.exists
-		(fun str -> str = "By Country")
-		groups_requested in
-	fun str -> Entry.of_string ~expect_country str in
-  let entries = List.map entry_of_string entries in
+type 'node tourney_spec = {
+  entries: string;
+  outcomes:  string;
+  groups_requested: string list;
+  filters_requested: string;
+  container: 'node;
+}
+
+let play { entries; outcomes; groups_requested; filters_requested; container } =
+  let cleanup_strings () =
+  (* Printf.printf "%s" outcomes; flush_all (); *)
+	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
+	let not_only_spaces str = 
+	  let all_spaces = Regexp.regexp "^\\s*$" in
+	  match Regexp.search all_spaces str 0 with
+		None -> true | _ -> false in
+	let entries = List.filter not_only_spaces (Regexp.split newline entries) in
+	let outcomes = List.filter not_only_spaces (Regexp.split newline outcomes) in
+	let entries = List.map Util.strip_spaces entries in
+	let outcomes  = List.map Util.strip_spaces outcomes in
+  (* Printf.printf "%d en %d ou" (List.length entries) (List.length outcomes) ; flush_all(); *)
+	let entry_of_string =
+	  let expect_country =
+		List.exists
+		  (fun str -> str = "By Country")
+		  groups_requested in
+	  fun str -> Entry.of_string ~expect_country str in
+	let entries = List.map entry_of_string entries in
+	(entries, outcomes)
+  in
+  let (entries, outcomes) = cleanup_strings () in
   let tourney = init entries in
 	(* let now1 = jsnew Js.date_now () in *)
   let current_state = List.fold_left won_str tourney outcomes in
 	(* let now2 = jsnew Js.date_now () in 
 	   Printf.printf "%d secs to win" now2#getMilliseconds; *)
 	(* Tourney.print current_state Tennis_player_entry.to_string *)
-  show container groups_requested current_state
+  show container groups_requested filters_requested current_state
 
 exception Not_text
-
-type 'node tourney_spec = {
-  entries: string;
-  outcomes:  string;
-  groups_requested: string list;
-  container: 'node;
-}
 
 let get_all_tourney_specs () =
   let firstChild node =
@@ -467,7 +473,13 @@ let get_all_tourney_specs () =
 	let id = Js.to_string container##id in
 	let entries = text_of (id ^ "-entries") in
 	let outcomes = text_of (id ^ "-outcomes") in
-	{ entries; outcomes; groups_requested; container } in
+	let filters_requested =
+	  try
+		Jsutil.getAttribute_exn container "tourney-filters"
+	  with _ ->
+		""
+	in
+	{ entries; outcomes; groups_requested; filters_requested; container } in
   let get_one node =
 	try
 	  Some (get_one node)
@@ -485,8 +497,8 @@ let all = Util.filter_then_map
   ~mapf:unwrap_option ~filterf:somes
   (get_all_tourney_specs ()) in
 List.iter
-  (fun { entries; outcomes; groups_requested; container } ->
+  (fun spec ->
 	try
-	  play entries outcomes groups_requested container
+	  play spec
 	with (Failure str) -> report_error str)
   all
