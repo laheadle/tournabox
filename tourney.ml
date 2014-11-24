@@ -452,15 +452,15 @@ let get_all_tourney_specs () =
 	let child = firstChild node in
 	let opt = Dom.CoerceTo.text child in
 	Js.Opt.get opt (fun () -> raise Not_text)  in
-  let text_of node_name =
-	let node = Jsutil.getElementById_exn node_name in
+  let text_of node_id =
+	let node = Jsutil.getElementById_exn node_id in
 	try
 	  Js.to_string (textChild node)##data
 	with
-	  Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_name)
+	  Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_id)
 	| Not_found -> ""
   in
-  let get_one container =
+  let get_spec container =
 	let space_comma_space = Regexp.regexp "\\s*,\\s*" in
 	let groups_requested_str =
 	  try
@@ -471,8 +471,18 @@ let get_all_tourney_specs () =
 	in
 	let groups_requested = Regexp.split space_comma_space groups_requested_str in
 	let id = Js.to_string container##id in
-	let entries = text_of (id ^ "-entries") in
-	let outcomes = text_of (id ^ "-outcomes") in
+	let entries_node_id =
+	  try
+		Jsutil.getAttribute_exn container "tourney-entries"
+	  with _ ->
+		(id ^ "-entries") in
+	let outcomes_node_id =
+	  try
+		Jsutil.getAttribute_exn container "tourney-outcomes"
+	  with _ ->
+		(id ^ "-outcomes") in
+	let entries = text_of entries_node_id in
+	let outcomes = text_of outcomes_node_id in
 	let filters_requested =
 	  try
 		Jsutil.getAttribute_exn container "tourney-filters"
@@ -480,15 +490,15 @@ let get_all_tourney_specs () =
 		""
 	in
 	{ entries; outcomes; groups_requested; filters_requested; container } in
-  let get_one node =
+  let get_spec container =
 	try
-	  Some (get_one node)
+	  Some (get_spec container)
 	with (Failure str) -> report_error str; None in
   let containers = doc##body##querySelectorAll (Js.string ".tourney-container") in
   let lst = Dom.list_of_nodeList containers in
-  let mapped = List.map get_one lst in
+  let specs = List.map get_spec lst in
 	(* Printf.printf "%d found" (List.length mapped); flush_all(); *)
-  mapped
+  specs
 ;;
 
 let unwrap_option = function Some x -> x | None -> assert false in
