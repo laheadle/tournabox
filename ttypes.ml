@@ -25,6 +25,6 @@ class type ['a] grouping_spec = object
 end
 
 
-let make_column_extractor (content, class_name, should_filter) = 
+let make_column (content, class_name, should_filter) = 
   { content; class_name; should_filter}
 

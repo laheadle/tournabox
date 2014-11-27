@@ -29,7 +29,7 @@ let o = let open Entry in object
 	  (fun e -> e.seed, to_string e)
   }
   method column_extractor num pos choice =
-	let extractors =
+	let columns =
 	  match choice with
 	  | { C.entry_pair = Some a, Some b; winner = Some c } ->
 		let outcome = if c = a then "Defeated" else "Was defeated by" in
@@ -51,5 +51,5 @@ let o = let open Entry in object
 		  ("In round " ^ (string_of_int (num - pos))), None, false
 		]
 	  | _ -> failwith "bug" in
-	List.map Ttypes.make_column_extractor extractors
+	List.map Ttypes.make_column columns
 end

@@ -62,7 +62,7 @@ let o =
 		this_group = round_matches && not already
 	  }
 	method column_extractor num pos choice =
-	  let extractors = match choice with
+	  let columns = match choice with
 		| { C.entry_pair = Some a, Some b; winner = Some c } ->
 		  let loser = if c = a then b else a in
 		  [ (Entry.to_string c), None, true;
@@ -78,5 +78,5 @@ let o =
 			"(To be decided)", None, false ]
 		| _ ->
 		  failwith "BUG: Invalid Column" in
-	  List.map Ttypes.make_column_extractor extractors
+	  List.map Ttypes.make_column columns
    end)

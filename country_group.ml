@@ -22,7 +22,7 @@ let o = let open Entry in object
 	this_group = C.compare_first choice group (fun p -> p.country)
   }
   method column_extractor num pos choice =
-	let extractors =
+	let columns =
 	  match choice with
 	  | { C.entry_pair = Some a, Some b; winner = Some c; round } ->
 		let outcome = if c = a then "Defeated" else "Was defeated by" in
@@ -45,5 +45,5 @@ let o = let open Entry in object
 		  "In round " ^ string_of_int (round + 1), None, false
 		]
 	  | _ -> failwith "bug" in
-	List.map Ttypes.make_column_extractor extractors
+	List.map Ttypes.make_column columns
 end

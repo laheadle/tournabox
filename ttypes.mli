@@ -15,7 +15,7 @@ type header_spec = {
   should_filter_header: bool;
 }
 
-val make_column_extractor: string * string option * bool -> column
+val make_column: string * string option * bool -> column
 
 class type ['a] grouping_spec = object
   method name:string

@@ -21,7 +21,7 @@ let o =
 		| _ -> failwith "BUG: Bad choice for group")
 	}
 	method column_extractor num pos choice =
-	  let extractors =
+	  let columns =
 		match choice with
 		| { C.entry_pair = Some a, Some b; winner = Some c } ->
 		  let outcome = if c = a then "Defeated" else "Was defeated by" in
@@ -37,5 +37,5 @@ let o =
 		  [ "Will face", Some "tourney-willFace", false;
 			"To be determined", None, false ]
 		| _ -> failwith "BUG: Invalid Column" in
-	  List.map Ttypes.make_column_extractor extractors
+	  List.map Ttypes.make_column columns
    end)
