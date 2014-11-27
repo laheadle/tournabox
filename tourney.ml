@@ -327,11 +327,14 @@ let rec main_loop state =
 
 let chosen_specs groups_requested =
   let all = [ Round_group.o; Performance_group.o; Country_group.o; Seed_group.o ] in
+  let group_exists group_name =
+	List.exists (fun spec ->
+	  (String.lowercase group_name) = (String.lowercase spec#name))
+	  all in
   let invalid =
 	List.filter
 	  (fun group_name ->
-		not (List.exists
-			   (fun spec -> group_name = spec#name) all))
+		not (group_exists group_name))
 	  groups_requested in
   let () = if List.length invalid > 0 then
 	  ignore(report_error 
@@ -346,13 +349,14 @@ let chosen_specs groups_requested =
   let valid =
 	List.filter
 	  (fun group_name ->
-		(List.exists
-		   (fun spec -> group_name = spec#name) all))
+		group_exists group_name)
 	  groups_requested in
   List.map
 	(fun valid ->
 	  List.find
-		(fun spec -> valid = spec#name) all)
+		(fun spec ->
+		  (String.lowercase valid) = (String.lowercase spec#name))
+		all)
 	valid 
 
 let enter_main_loop state =
