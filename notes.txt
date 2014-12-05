@@ -1,0 +1,10 @@
+instead of entry_pair; winner, maybe
+
+(Some a, Some b), { winner = c }
+
+or 
+
+type contest = Entry.t * Entry.t
+type winner = Entry.t
+
+type choice = contest * winner

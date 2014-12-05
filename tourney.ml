@@ -3,15 +3,14 @@ module C = Choice
 let report_error str = Dom_html.window##alert (Js.string str)
 
 
-type e = Entry.t
-
 type round =  int Choice.t array
 type tourney = { rounds: round array;
+				 num_slots: int;
+				 byes: (int, bool) Hashtbl.t;
 				 entries_list: Entry.t list;
 				 entries: (int, Entry.t) Hashtbl.t;
 				 indices: (Entry.t, int) Hashtbl.t
 			   }
-type round_in_progress = e Choice.t list
 
 let (>>=) = Lwt.bind
 
@@ -22,7 +21,12 @@ let entry_of_index index tourney =
   Hashtbl.find tourney.entries index
 
 let choice_of_ichoice ichoice tourney =
-  C.map (fun i -> entry_of_index i tourney) ichoice
+  C.map (fun i ->
+	try
+	  ignore(Hashtbl.find tourney.byes i);
+	  Entry.Bye
+	with _ ->
+	  Entry.Somebody (entry_of_index i tourney)) ichoice
 
 let log_2 len =
   if Util.power_of_two len then Util.log 2 len
@@ -30,49 +34,8 @@ let log_2 len =
 	
 let num_rounds tourney =
   let len = Array.length tourney.rounds.(0) in
-  Printf.printf "%d rounds" (log_2 len);
+  Printf.printf "%d rounds" (log_2 len + 1);
   log_2 len + 1
-
-let init entries =
-  let len = List.length entries in
-  Printf.printf "#entries: %d\n" len;
-  let num_rounds = log_2 len in
-  let empty_ichoice ~(round: int) = {
-	C.entry_pair=(None,None);
-	winner=None;
-	round = round;
-	position = 0;
-  } in
-  let init_round i =
-	Array.make (Util.pow 2 (num_rounds - i - 1))
-	  (empty_ichoice ~round:i) in
-  let init_first tourney = 
-	let round = tourney.rounds.(0) in
-	for i = 0 to Array.length round - 1 do
-	  let p1 =  i * 2 in
-	  let p2 =  i * 2 + 1 in
-	  Util.replace round i (fun ichoice ->
-		{ ichoice with C.entry_pair=(Some p1, Some p2);
-		  position = p1 })
-	done
-  in
-  let entries_hash = Hashtbl.create 200 in
-  let indices_hash = Hashtbl.create 200 in
-  let rec fill_hash n lst =
-	match lst with
-	  [] -> ()
-	| hd :: tl ->
-	  Hashtbl.add entries_hash n hd;
-	  Hashtbl.add indices_hash hd n;
-	  fill_hash (n + 1) tl in
-  fill_hash 0 entries;
-  let tourney = {
-	entries_list = entries;
-	entries = entries_hash;
-	indices = indices_hash;
-	rounds = Array.init num_rounds init_round } in
-  init_first tourney;
-  tourney
 
 let entries tourney = tourney.entries
 let entries_list tourney = tourney.entries_list
@@ -101,7 +64,8 @@ let path_intersect winpath losepath =
   in iter 0 winpath losepath 
 
 let index_to_string tourney index =
-  Entry.to_string (entry_of_index index tourney)
+  let open Entry in
+  to_string (entry_of_index index tourney)
 
 let playing tourney index =
   let path = path index tourney in
@@ -115,7 +79,7 @@ let playing tourney index =
   in
   find choices
 
-let won tourney entry =
+let won tourney index =
   let impl winner loser = 
 	let winpath = path winner tourney in
 	let losepath = path loser tourney in
@@ -140,24 +104,114 @@ let won tourney entry =
 	  ();
 	tourney
   in
-  let i = (index_of_entry entry tourney) in
-  impl i (playing tourney i)
+  Printf.printf "won %d %d" index (playing tourney index); flush_all();
+  impl index (playing tourney index)
 
+let is_true hash key =
+  try
+	Hashtbl.find hash key
+  with
+	_ -> false
+
+let is_bye tourney i = is_true tourney.byes i
+
+(* The first round is initialized with full ichoices; other rounds are
+   initialized with empty ichoices *)
+let init entries_list =
+  let open Entry in
+  let len = List.length entries_list in
+  Printf.printf "#entries: %d\n" len;
+  let num_rounds = log_2 len in
+  let empty_ichoice ~(round: int) = {
+	C.entry_pair=(None,None);
+	winner=None;
+	round;
+	position = 0;
+  } in
+  let init_round i =
+	Array.make (Util.pow 2 (num_rounds - i - 1))
+	  (empty_ichoice ~round:i) in
+  let byes = Hashtbl.create 4 in
+  let init_first round =
+	for i = 0 to Array.length round - 1 do
+	  let p1 =  i * 2 in
+	  let p2 =  i * 2 + 1 in
+	  Util.replace round i (fun ichoice ->
+		{ ichoice with C.entry_pair=(Some p1, Some p2);
+		  position = p1 })
+	done
+  in
+  let entries = Hashtbl.create 200 in
+  let indices = Hashtbl.create 200 in
+  let rec fill_hashes n lst =
+	match lst with
+	  [] -> ()
+	| hd :: tl ->
+	  if Entry.is_bye hd then
+		Hashtbl.add byes n true
+	  else begin
+		let t = fetch hd in
+		Hashtbl.add entries n t;
+		Hashtbl.add indices t n;
+	  end;
+	  fill_hashes (n + 1) tl
+  in
+  fill_hashes 0 entries_list;
+  let rounds = Array.init num_rounds init_round in
+  let first =  rounds.(0) in
+  init_first first;
+  let rec perform_byes tourney round_index choice_index =
+	Printf.printf "byes %d %d" round_index choice_index; flush_all ();
+	let do_round round =
+	  if choice_index < Array.length round then
+		let tourney =
+		  match round.(choice_index) with
+			{ C.entry_pair = Some a, Some b } ->
+			  if is_true byes a then
+				(won tourney b)
+			  else if is_true byes b then
+				(won tourney a)
+			  else
+				tourney
+		  | _ -> tourney
+		in
+		perform_byes tourney round_index (choice_index + 1)
+	  else
+		perform_byes tourney (round_index + 1) 0
+	in
+	if round_index < Array.length tourney.rounds then
+	  do_round rounds.(round_index)
+	else
+	  tourney
+  in
+  let tourney = {
+	entries_list = Util.filter_then_map ~mapf: fetch
+	  ~filterf: is_t
+	  entries_list;
+	byes;
+	entries;
+	indices;
+	rounds;
+	num_slots = Array.length first;
+  } in
+  perform_byes tourney 0 0
 
 let won_str =
   let hash = Hashtbl.create 200 in
   fun tourney partial ->
-	let entry = (try
-				   Hashtbl.find hash partial
+	let entry = (
+	  try
+		Hashtbl.find hash partial
 	  with Not_found ->
 		let entry =
 		  Util.pick (entries_list tourney) partial Entry.to_string
 		in
 		Hashtbl.add hash partial entry;
 		entry) in
-	won tourney entry
+	let i = (index_of_entry entry tourney) in
+	won tourney i
 
-let num_entries tourney = List.length tourney.entries_list
+let num_slots tourney = tourney.num_slots
 
 let select_grouped group_spec tourney =
   let make_choices () = ref [] in
@@ -173,20 +227,25 @@ let select_grouped group_spec tourney =
 		else
 		  hd :: (add_choice_iter choice tl)
   in
-  let add_choice ichoice =
-	choices :=
-	  add_choice_iter
-	  (convert ichoice)
-	  !choices
+  let add_choice = function
+	| { C.entry_pair = (Some k, _) } as ichoice ->
+	  if not (is_bye tourney k) then begin
+		(Printf.printf "Add %d" k); flush_all();
+		choices :=
+		  add_choice_iter
+		  (convert ichoice)
+		  !choices
+	  end
+	| _ -> ()
   in
   for i = 0 to Array.length tourney.rounds - 1 do
 	let round = tourney.rounds.(i) in
 	for i = 0 to Array.length round - 1 do
 	  match round.(i) with
 		{ C.entry_pair = (Some k, Some j) } as ichoice ->
-		  add_choice ichoice;
-			(* Make sure the reference entry comes first *)
-		  add_choice { ichoice with C.entry_pair = ( Some j, Some k ) };
+		   add_choice ichoice;
+		  (* Make sure the reference entry comes first *)
+			add_choice { ichoice with C.entry_pair = ( Some j, Some k ) };
 	  | { C.entry_pair = (None, Some k) } as ichoice ->
 		add_choice { ichoice with C.entry_pair = ( Some k, None ) };
 	  | { C.entry_pair = (Some k, None) } as ichoice ->
@@ -260,7 +319,7 @@ type check = Dom_html.inputElement Js.t
 
 type op =
   Key
-| EGroup of check * Entry.t Ttypes.grouping_spec
+| EGroup of check * Entry.slot Ttypes.grouping_spec
 
 type 'node state = {
   filter: string;
@@ -292,6 +351,7 @@ let select_and_render state =
   match state.current_egroup with
 	EGroup (check, espec) ->
 	  let groups = select_grouped espec state.tourney in
+	  Printf.printf "Selected %d groups" (List.length groups); flush_all();
 	  render_groups state.tourney state.inner groups espec filter
   | _ -> failwith "BUG: get_espec"
 
@@ -326,7 +386,7 @@ let rec main_loop state =
 	Lwt.return ())
 
 let chosen_specs groups_requested =
-  let all = [ Round_group.o; Performance_group.o; Country_group.o; Seed_group.o ] in
+  let all = [ (* Round_group.o; Performance_group.o; Country_group.o; *) Seed_group.o ] in
   let group_exists group_name =
 	List.exists (fun spec ->
 	  (String.lowercase group_name) = (String.lowercase spec#name))
@@ -434,7 +494,7 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
 		List.exists
 		  (fun str -> str = "By Country")
 		  groups_requested in
-	  fun str -> Entry.of_string ~expect_country str in
+	  fun str -> Entry.slot_of_string ~expect_country str in
 	let entries = List.map entry_of_string entries in
 	(entries, outcomes)
   in
@@ -444,7 +504,7 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
   let current_state = List.fold_left won_str tourney outcomes in
 	(* let now2 = jsnew Js.date_now () in 
 	   Printf.printf "%d secs to win" now2#getMilliseconds; *)
-	(* Tourney.print current_state Tennis_player_entry.to_string *)
+  Printf.printf "showing"; flush_all ();
   show container groups_requested filters_requested current_state
 
 exception Not_text
@@ -514,5 +574,7 @@ List.iter
   (fun spec ->
 	try
 	  play spec
-	with (Failure str) -> report_error str)
+	with Failure str -> report_error str)
+(*	| exn ->  ignore(Lwt_log_js.log ~exn ~level:Lwt_log_js.Error "error"); flush_all ()) 
+	  Printf.printf "%s" (Printexc.get_backtrace ()); flush_all ())*)
   all

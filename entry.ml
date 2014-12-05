@@ -13,7 +13,7 @@ let to_string entry =
   (entry.player ^ country_str)
 	seed_str
 
-let of_string ?(expect_country=true) str =
+let t_of_string ?(expect_country=true) str =
   let begin_and_end regex str convert =
 	  match Regexp.search regex str 0 with
 		None -> assert false
@@ -53,3 +53,20 @@ let of_string ?(expect_country=true) str =
 	else Printf.sprintf " (%s)" attribute in
   { player = player ^ attribute ; country; seed }
 
+type slot = Bye | Somebody of t
+
+let slot_of_string ?(expect_country=true) str =
+  if str = "-bye-" then Bye else
+	Somebody (t_of_string ~expect_country str)
+
+let fetch = function
+  | Bye -> assert false
+  | Somebody t -> t
+
+let is_bye = function
+  | Bye -> true
+  | Somebody _ -> false
+
+let is_t = function
+  | Bye -> false
+  | Somebody _ -> true
