@@ -72,9 +72,14 @@ let playing tourney index =
   let nth array n = array.(n) in
   let choices = List.map2 nth (Array.to_list tourney.rounds) path in
   let rec find lst = match lst with
-	| [] -> failwith ("Error: Player has exited the tourney; they cannot win another game: " ^ index_to_string tourney index)
+	| [] -> failwith ("Error: Invalid Winner:" ^ (index_to_string tourney index) ^
+						 ". \n\nThis player has already lost.")
 	| { C.entry_pair = (Some x, Some y); winner = None } :: tl
 	  -> if x = index then y else x
+	| { C.entry_pair = (Some x, None); _ } :: _
+	| { C.entry_pair = (None, Some x); _ } :: _ when x = index
+	  -> failwith ("Error: Invalid Winner:" ^ (index_to_string tourney index) ^
+						 ". \n\nThis player's next opponent is not yet determined.")
 	| hd :: tl -> find tl
   in
   find choices
