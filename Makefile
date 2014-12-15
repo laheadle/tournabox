@@ -1,26 +1,23 @@
-APPDIRS := $(wildcard apps/*)
 
-define PROXY_TARGET
-$(1):
-  $(foreach appdir,$(APPDIRS),$(MAKE) -C $(appdir) $(1) ;)
-endef
+FLAGS :=  -cflag -annot -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
+DEBUG_FLAGS :=  -lflag -g -cflag -annot -cflag -g -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
 
-test:
-	ocamlbuild -cflag -g -cflag -annot  -lflag -g -use-ocamlfind -pkgs js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o test_dom_methods.byte
-	js_of_ocaml --pretty --debuginfo test_dom_methods.byte
-	#cp ./test_dom_methods.js ./tst_dom_methods.html ~/Downloads/
+JSO_DEBUG_FLAGS := +weak.js --enable excwrap --debuginfo --pretty --noinline
 
 js:
-	ocamlbuild -cflag -annot -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o tourney.byte
+	ocamlbuild $(FLAGS) tourney.byte
 	js_of_ocaml tourney.byte
+
+dev: js
 	cp ./tourney.js ./tst.html ~/Downloads/
+
+test: js
+	ocamlbuild $(DEBUG_FLAGS) test_dom_methods.byte
+	js_of_ocaml $(JSO_DEBUG_FLAGS) test_dom_methods.byte
+	cp ./test_dom_methods.js ./tst_dom_methods.html ~/Downloads/
+
 
 js_maps:
-	ocamlbuild -lflag -g -cflag -annot -cflag -g -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o tourney.byte
-	js_of_ocaml +weak.js --enable excwrap --debuginfo --pretty --noinline tourney.byte
+	ocamlbuild $(DEBUG_FLAGS) tourney.byte
+	js_of_ocaml $(JSO_DEBUG_FLAGS) tourney.byte
 	cp ./tourney.js ./tst.html ~/Downloads/
-
-all:
-	ocamlbuild -libs str -cflag -g -cflag -bin-annot men_usopen_2014.byte
-	ocamlbuild -libs str -cflag -g -cflag -bin-annot women_usopen_2014.byte
-

@@ -84,34 +84,6 @@ let playing tourney index =
   in
   find choices
 
-let won tourney index =
-  let impl winner loser = 
-	let winpath = path winner tourney in
-	let losepath = path loser tourney in
-	let (playedRound, winI) = path_intersect winpath losepath in
-	let nextI = next_position winI in
-	Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
-	  { playedChoice with C.winner = Some winner });
-	if playedRound < num_rounds tourney - 1 then
-	  let schedule nextChoice =
-		let to_play =
-		  match nextChoice with
-			{ C.entry_pair = (p1, _p2) ; _ } ->
-			  assert (_p2 = None);
-			  if p1 = None then
-				{ nextChoice with C.entry_pair = (Some winner, None) }
-			  else
-				{ nextChoice with C.entry_pair = (p1, Some winner) } in
-		{ to_play with C.position = nextI }
-	  in
-	  Util.replace (tourney.rounds.(playedRound + 1)) nextI schedule
-	else
-	  ();
-	tourney
-  in
-  Printf.printf "won %d %d" index (playing tourney index); flush_all();
-  impl index (playing tourney index)
-
 let is_true hash key =
   try
 	Hashtbl.find hash key
@@ -119,6 +91,44 @@ let is_true hash key =
 	_ -> false
 
 let is_bye tourney i = is_true tourney.byes i
+
+let rec won tourney index =
+  let impl winner loser = 
+	let winpath = path winner tourney in
+	let losepath = path loser tourney in
+	let (playedRound, winI) = path_intersect winpath losepath in
+	let nextI = next_position winI in
+	Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
+	  { playedChoice with C.winner = Some winner });
+	let schedule () =
+	  let next_round = tourney.rounds.(playedRound + 1) in
+	  let next_choice = next_round.(nextI) in
+	  let will_have_bye, to_play =
+		match next_choice with
+		  { C.entry_pair = (p1, _p2) ; _ } ->
+			assert (_p2 = None);
+			match p1 with
+			  None ->
+				false,
+				{ next_choice with C.position = nextI;
+				  C.entry_pair = (Some winner, None) }
+			  | Some i_p1 ->
+				is_bye tourney i_p1,
+				{ next_choice with C.position = nextI;
+				  C.entry_pair = (p1, Some winner) }
+	  in
+	  next_round.(nextI) <- to_play;
+	  (* Go ahead and advance the bye *)
+	  if will_have_bye then won tourney winner else tourney
+	in
+	if playedRound < num_rounds tourney - 1 then
+	  schedule ()
+	else
+	  tourney
+  in
+  Printf.printf "won %d %d" index (playing tourney index); flush_all();
+  impl index (playing tourney index)
+
 
 (* The first round is initialized with full ichoices; other rounds are
    initialized with empty ichoices *)
@@ -515,16 +525,16 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
 exception Not_text
 
 let get_all_tourney_specs () =
-  let firstChild node =
+  let first_child node =
 	Js.Opt.get (node##childNodes##item(0)) (fun () -> raise Not_found) in
-  let textChild node =
-	let child = firstChild node in
+  let text_child node =
+	let child = first_child node in
 	let opt = Dom.CoerceTo.text child in
 	Js.Opt.get opt (fun () -> raise Not_text)  in
   let text_of node_id =
 	let node = Jsutil.getElementById_exn node_id in
 	try
-	  Js.to_string (textChild node)##data
+	  Js.to_string (text_child node)##data
 	with
 	  Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_id)
 	| Not_found -> ""
