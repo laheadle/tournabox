@@ -442,31 +442,31 @@ let enter_main_loop state =
 let show container groups_requested filters_requested tourney =
   let inner = Dom_html.createDiv doc in
   let top = Dom_html.createDiv doc in
-  let domAdd = Dom.appendChild in
-  let add elt = domAdd container elt in
-  let addTop elt = domAdd top elt in
-  let middle = Dom_html.createDiv doc in
+  let top_wrapper = Dom_html.createDiv doc in
+  let domAdd ~parent child = Dom.appendChild parent child in
+  let add elt = domAdd ~parent:container elt in
+  let addTop elt = domAdd ~parent:top elt in
   let filter_box = Dom_html.createInput doc in
   let add_group_checkbox group_spec =
 	let check_span = Dom_html.createSpan doc in
 	let check_group = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-	Jsutil.textNode group_spec#name |> (domAdd check_span);
-	domAdd check_span check_group;
+	Jsutil.textNode group_spec#name |> (domAdd ~parent:check_span);
+	domAdd ~parent:check_span check_group;
 	check_span##className <- (Js.string "tourney-menu-checkspan");
 	addTop check_span;
 	(check_group, group_spec)
   in
   let filter_span = Dom_html.createSpan doc in
   let _ =
+	top_wrapper##className <- (Js.string "tourney-menu-wrapper");
 	top##className <- (Js.string "tourney-menu");
-	add top;
-	add middle;
-	domAdd container middle;
+	add top_wrapper;
+	domAdd ~parent:top_wrapper top;
 	add inner;
-	domAdd filter_span (Jsutil.textNode "Filter: ");
+	domAdd ~parent:filter_span (Jsutil.textNode "Filter: ");
 	filter_span##className <- (Js.string "tourney-filterBox");
-	domAdd filter_span filter_box;
-	domAdd top filter_span; in
+	domAdd ~parent:filter_span filter_box;
+	domAdd ~parent:top filter_span; in
   let add = add_group_checkbox in
   let especs = List.map add (chosen_specs groups_requested) in
   let emake (check, spec) = EGroup (check, spec) in
