@@ -8,3 +8,7 @@ type contest = Entry.t * Entry.t
 type winner = Entry.t
 
 type choice = contest * winner
+
+--
+
+test missing countries

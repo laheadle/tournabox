@@ -33,6 +33,7 @@ let contains_choice_player lst choice =
 	false
 
 let o =
+  let open Entry in
   (object
 	method name = "By Round"
 	method header_spec ~num_rounds ~num_groups ~pos:round lst =
@@ -63,16 +64,23 @@ let o =
 	  }
 	method column_extractor num pos choice =
 	  let columns = match choice with
-		| { C.entry_pair = Some a, Some b; winner = Some c } ->
+		| { C.entry_pair = Some (Somebody a),
+			Some Bye; winner = _ } ->
+		  [ (Entry.to_string a), None, true;
+			"advanced", (Some "tourney-won"), false;
+			"with a bye", None, true ]
+		| { C.entry_pair = Some (Somebody a),
+			Some (Somebody b); winner = Some (Somebody c) } ->
 		  let loser = if c = a then b else a in
 		  [ (Entry.to_string c), None, true;
 			"defeated", (Some "tourney-won"), false;
 			(Entry.to_string loser), None, true ]
-		| { C.entry_pair = Some a, Some b; winner = None } ->
+		| { C.entry_pair = Some (Somebody a),
+			Some (Somebody b); winner = None } ->
 		  [ (Entry.to_string a), None, true;
 			"will face", (Some "tourney-willFace"), false;
 			(Entry.to_string b), None, true ]
-		| { C.entry_pair = Some a, None; _ } ->
+		| { C.entry_pair = Some (Somebody a), None; _ } ->
 		  [ (Entry.to_string a), None, true;
 			"will face", (Some "tourney-willFace"), false;
 			"(To be decided)", None, false ]

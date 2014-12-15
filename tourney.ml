@@ -401,7 +401,7 @@ let rec main_loop state =
 	Lwt.return ())
 
 let chosen_specs groups_requested =
-  let all = [ (* Round_group.o; Performance_group.o; Country_group.o; *) Seed_group.o ] in
+  let all = [ Round_group.o; Performance_group.o; Country_group.o; Seed_group.o ] in
   let group_exists group_name =
 	List.exists (fun spec ->
 	  (String.lowercase group_name) = (String.lowercase spec#name))
