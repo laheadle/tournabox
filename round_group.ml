@@ -67,22 +67,22 @@ let o =
 		| { C.entry_pair = Some (Somebody a),
 			Some Bye; winner = _ } ->
 		  [ (Entry.to_string a), None, true;
-			"advanced", (Some "tourney-won"), false;
+			"advanced", (Some "tournabox-won"), false;
 			"with a bye", None, true ]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = Some (Somebody c) } ->
 		  let loser = if c = a then b else a in
 		  [ (Entry.to_string c), None, true;
-			"defeated", (Some "tourney-won"), false;
+			"defeated", (Some "tournabox-won"), false;
 			(Entry.to_string loser), None, true ]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = None } ->
 		  [ (Entry.to_string a), None, true;
-			"will face", (Some "tourney-willFace"), false;
+			"will face", (Some "tournabox-willFace"), false;
 			(Entry.to_string b), None, true ]
 		| { C.entry_pair = Some (Somebody a), None; _ } ->
 		  [ (Entry.to_string a), None, true;
-			"will face", (Some "tourney-willFace"), false;
+			"will face", (Some "tournabox-willFace"), false;
 			"(To be decided)", None, false ]
 		| _ ->
 		  failwith "BUG: Invalid Column" in

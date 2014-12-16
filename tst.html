@@ -1,25 +1,25 @@
 <html>
 <head>
 <style>
-.tourney-lost { color: red }
-.tourney-won { color: green }
-.tourney-willFace { font-weight: bold }
-/* .tourney-menu { text-align: center } */
-table.tourney-outerTable { margin-top: 10px; }
+.tournabox-lost { color: red }
+.tournabox-won { color: green }
+.tournabox-willFace { font-weight: bold }
+/* .tournabox-menu { text-align: center } */
+table.tournabox-outerTable { margin-top: 10px; }
 body { font-family: Arial, Sans Serif; width: 1000px; margin: 50px auto; }
-.tourney-header { font-weight: bold; font-style: italic; font-size: 1.2em }
-.tourney-FilterBox { float: right } 
+.tournabox-header { font-weight: bold; font-style: italic; font-size: 1.2em }
+.tournabox-FilterBox { float: right } 
 
 input[type="checkbox"] {
 margin-right: 20px;
 vertical-align: middle;
 }
 
-.tourney-menu {
+.tournabox-menu {
   padding: 4px;
 }
 
-.tourney-menu-wrapper {
+.tournabox-menu-wrapper {
   background-color: #D5EBED;
 }
 
@@ -36,7 +36,7 @@ vertical-align: middle;
 
 <h2> Us Open 2014, Men's Draw </h2>
 
-<div class="tourney-container" id="men-usopen-2014" style="padding: 10px; min-height: 120px; max-height: 700px; overflow: scroll;width: 1000px; border: 3px solid green;" tourney-groups="By Seed,By Round,By Performance"></div>
+<div class="tournabox-container" id="men-usopen-2014" style="padding: 10px; min-height: 120px; max-height: 700px; overflow: scroll;width: 1000px; border: 3px solid green;" tournabox-groups="By Seed,By Round,By Performance"></div>
 
 <pre style="display: none" id="men-usopen-2014-entries">
 -bye-
@@ -56,5 +56,5 @@ yen
 yen
 </pre>
 
-<script src="./tourney.js"></script>
+<script src="./tournabox.js"></script>
 </body>

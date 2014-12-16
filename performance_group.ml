@@ -26,25 +26,25 @@ let o =
 	  let columns =
 		match choice with
 		| { C.entry_pair = Some (Somebody a), Some Bye; winner = _ } ->
-		  [ "Advanced", Some "tourney-won", false;
+		  [ "Advanced", Some "tournabox-won", false;
 			"With a bye", None, false;
 			("In round " ^ (string_of_int (num - pos))), None, false ]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = Some (Somebody c) } ->
 		  let outcome = if c = a then "Defeated" else "Was defeated by" in
 		  [ outcome,
-			Some (if c = a then "tourney-won" else "tourney-lost"),
+			Some (if c = a then "tournabox-won" else "tournabox-lost"),
 			false;
 			(Entry.to_string b), None, false;
 			("In round " ^ (string_of_int (num - pos))), None, false ]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = None } ->
-		  [ "Will face", Some "tourney-willFace", false;
+		  [ "Will face", Some "tournabox-willFace", false;
 			(Entry.to_string b), None, false;
 			("In round " ^ (string_of_int (num - pos))), None, false ]
 		| { C.entry_pair = Some (Somebody a),
 			None; winner = None } ->
-		  [ "Will face", Some "tourney-willFace", false;
+		  [ "Will face", Some "tournabox-willFace", false;
 			"To be determined", None, false;
 			("In round " ^ (string_of_int (num - pos))), None, false ]
 		| _ -> failwith "BUG: Invalid Column" in

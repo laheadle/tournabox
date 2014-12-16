@@ -5,11 +5,11 @@ DEBUG_FLAGS :=  -lflag -g -cflag -annot -cflag -g -use-ocamlfind -pkgs js_of_oca
 JSO_DEBUG_FLAGS := +weak.js --enable excwrap --debuginfo --pretty --noinline
 
 js:
-	ocamlbuild $(FLAGS) tourney.byte
-	js_of_ocaml tourney.byte
+	ocamlbuild $(FLAGS) tournabox.byte
+	js_of_ocaml tournabox.byte
 
 dev: js
-	cp ./tourney.js ./tst.html ~/Downloads/
+	cp ./tournabox.js ./tst.html ~/Downloads/
 
 test: js
 	ocamlbuild $(DEBUG_FLAGS) test_dom_methods.byte
@@ -18,6 +18,6 @@ test: js
 
 
 js_maps:
-	ocamlbuild $(DEBUG_FLAGS) tourney.byte
-	js_of_ocaml $(JSO_DEBUG_FLAGS) tourney.byte
-	cp ./tourney.js ./tst.html ~/Downloads/
+	ocamlbuild $(DEBUG_FLAGS) tournabox.byte
+	js_of_ocaml $(JSO_DEBUG_FLAGS) tournabox.byte
+	cp ./tournabox.js ./tst.html ~/Downloads/

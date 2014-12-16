@@ -33,7 +33,7 @@ let o = let open Entry in object
 	   { C.entry_pair = Some (Somebody a),
 		  Some Bye; winner = _; round } ->
 		[ (to_string a), None, true;
-		  "Advanced", Some "tourney-won", false;
+		  "Advanced", Some "tournabox-won", false;
 		  "with a bye", None, false;
 		  "In round " ^ string_of_int (round + 1), None, false]
 	  | { C.entry_pair = Some (Somebody a),
@@ -41,21 +41,21 @@ let o = let open Entry in object
 		let outcome = if c = a then "Defeated" else "Was defeated by" in
 		[ (to_string a), None, true;
 		  outcome,
-		  (Some (if c = a then "tourney-won" else "tourney-lost")),
+		  (Some (if c = a then "tournabox-won" else "tournabox-lost")),
 		  false;
 		  (to_string b), None, false;
 		  "In round " ^ string_of_int (round + 1), None, false]
 	  | { C.entry_pair = Some (Somebody a),
 		  Some (Somebody b); winner = None ; round } ->
 		[  (to_string a), None, true;
-		   "Will Face", (Some "tourney-willFace"), false;
+		   "Will Face", (Some "tournabox-willFace"), false;
 		   (to_string b), None, false;
 		   "In round " ^ string_of_int (round + 1), None, false ]
 	  | { C.entry_pair = Some (Somebody a), None;
 		  winner = None ; round } ->
 		[
 		  (to_string a), None, true;
-		  "Will face", (Some "tourney-willFace"), false;
+		  "Will face", (Some "tournabox-willFace"), false;
 		  "To Be Determined", None, false;
 		  "In round " ^ string_of_int (round + 1), None, false
 		]

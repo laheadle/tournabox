@@ -296,10 +296,10 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 	let num_choices = List.length choices in
 	let { Ttypes.header_str; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
-	let table = Jsutil.table (Some "tourney-outerTable") in
+	let table = Jsutil.table (Some "tournabox-outerTable") in
 	let header = Dom_html.createTr doc in
-	header##className <- Js.string "tourney-header-row";
-	Jsutil.addTd header header_str (Some "tourney-header");
+	header##className <- Js.string "tournabox-header-row";
+	Jsutil.addTd header header_str (Some "tournabox-header");
 	Dom.appendChild table header;
 	let has_matches = ref false in
 	let do_choice i choice =
@@ -452,19 +452,19 @@ let show container groups_requested filters_requested tourney =
 	let check_group = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
 	Jsutil.textNode group_spec#name |> (domAdd ~parent:check_span);
 	domAdd ~parent:check_span check_group;
-	check_span##className <- (Js.string "tourney-menu-checkspan");
+	check_span##className <- (Js.string "tournabox-menu-checkspan");
 	addTop check_span;
 	(check_group, group_spec)
   in
   let filter_span = Dom_html.createSpan doc in
   let _ =
-	top_wrapper##className <- (Js.string "tourney-menu-wrapper");
-	top##className <- (Js.string "tourney-menu");
+	top_wrapper##className <- (Js.string "tournabox-menu-wrapper");
+	top##className <- (Js.string "tournabox-menu");
 	add top_wrapper;
 	domAdd ~parent:top_wrapper top;
 	add inner;
 	domAdd ~parent:filter_span (Jsutil.textNode "Filter: ");
-	filter_span##className <- (Js.string "tourney-filterBox");
+	filter_span##className <- (Js.string "tournabox-filterBox");
 	domAdd ~parent:filter_span filter_box;
 	domAdd ~parent:top filter_span; in
   let add = add_group_checkbox in
@@ -543,7 +543,7 @@ let get_all_tourney_specs () =
 	let space_comma_space = Regexp.regexp "\\s*,\\s*" in
 	let groups_requested_str =
 	  try
-		Jsutil.getAttribute_exn container "tourney-groups"
+		Jsutil.getAttribute_exn container "tournabox-groups"
 	  with _ ->
 		let all_group_names = "By Round,By Performance, By Country, By Seed" in
 		all_group_names
@@ -552,19 +552,19 @@ let get_all_tourney_specs () =
 	let id = Js.to_string container##id in
 	let entries_node_id =
 	  try
-		Jsutil.getAttribute_exn container "tourney-entries"
+		Jsutil.getAttribute_exn container "tournabox-entries"
 	  with _ ->
 		(id ^ "-entries") in
 	let outcomes_node_id =
 	  try
-		Jsutil.getAttribute_exn container "tourney-outcomes"
+		Jsutil.getAttribute_exn container "tournabox-outcomes"
 	  with _ ->
 		(id ^ "-outcomes") in
 	let entries = text_of entries_node_id in
 	let outcomes = text_of outcomes_node_id in
 	let filters_requested =
 	  try
-		Jsutil.getAttribute_exn container "tourney-filters"
+		Jsutil.getAttribute_exn container "tournabox-filters"
 	  with _ ->
 		""
 	in
@@ -573,7 +573,7 @@ let get_all_tourney_specs () =
 	try
 	  Some (get_spec container)
 	with (Failure str) -> report_error str; None in
-  let containers = doc##body##querySelectorAll (Js.string ".tourney-container") in
+  let containers = doc##body##querySelectorAll (Js.string ".tournabox-container") in
   let lst = Dom.list_of_nodeList containers in
   let specs = List.map get_spec lst in
 	(* Printf.printf "%d found" (List.length mapped); flush_all(); *)

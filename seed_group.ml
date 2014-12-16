@@ -37,7 +37,7 @@ let o = let open Entry in object
 	let columns =
 	  match choice with
 	  | { C.entry_pair = Some _, Some Bye; winner = _ } ->
-		[  "Advanced", (Some "tourney-won"), false;
+		[  "Advanced", (Some "tournabox-won"), false;
 		   "With a Bye", None, false;
 		   in_round ]
 	  | { C.entry_pair =
@@ -46,20 +46,20 @@ let o = let open Entry in object
 		  winner = Some (Somebody c) } ->
 		let outcome = if c = b then "Was defeated by" else "Defeated" in
 		[ outcome,
-		  (Some (if c = b then "tourney-lost" else "tourney-won")),
+		  (Some (if c = b then "tournabox-lost" else "tournabox-won")),
 		  false;
 		  (to_string b), None, false;
 		  in_round ]
 	  | { C.entry_pair = Some (Somebody a), Some (Somebody b);
 		  winner = None } ->
 		[
-		  "Will face", (Some "tourney-willFace"), false;
+		  "Will face", (Some "tournabox-willFace"), false;
 		  (to_string b), None, false;
 		  in_round ]
 	  | { C.entry_pair = Some (Somebody a),None;
 		  winner = None } ->
 		[
-		  "Will face", (Some "tourney-willFace"), false;
+		  "Will face", (Some "tournabox-willFace"), false;
 		  "To be determined", None, false;
 		  in_round
 		]
