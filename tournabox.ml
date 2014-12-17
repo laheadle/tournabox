@@ -289,6 +289,8 @@ let or_filter_matches or_filter str =
   in
   iter or_filter
 
+let dom_add ~parent child = Dom.appendChild parent child
+
 let render_groups tourney container groups grouping_spec (filter: or_filter) =
   let num_rounds = num_rounds tourney in
   let num_groups = List.length groups in
@@ -296,11 +298,11 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 	let num_choices = List.length choices in
 	let { Ttypes.header_str; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
-	let table = Jsutil.table (Some "tournabox-outer-table") in
+	let group_elt = Jsutil.table (Some "tournabox-group") in
 	let header = Dom_html.createTr doc in
 	header##className <- Js.string "tournabox-header-row";
 	Jsutil.addTd header header_str (Some "tournabox-header");
-	Dom.appendChild table header;
+	dom_add ~parent:group_elt header;
 	let has_matches = ref false in
 	let do_choice i choice =
 	  let row = Dom_html.createTr doc in
@@ -324,12 +326,12 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 						(match class_name with None -> ""
 						| Some str -> str))))
 		  columns;
-		Dom.appendChild table row
+		dom_add ~parent:group_elt row
 	  end
 	in
 	List.iteri do_choice choices;
 	if !has_matches then begin
-	  Dom.appendChild container table
+	  dom_add ~parent:container group_elt
 	end
   in
   List.iteri do_choices groups
@@ -444,37 +446,36 @@ let enter_main_loop state =
   main_loop state
 
 let show container groups_requested filters_requested tourney =
-  let domAdd ~parent child = Dom.appendChild parent child in
   let root =  Dom_html.createDiv doc in
   let inner = Dom_html.createDiv doc in
   let top = Dom_html.createDiv doc in
   let top_wrapper = Dom_html.createDiv doc in
-  let add elt = domAdd ~parent:root elt in
-  let addTop elt = domAdd ~parent:top elt in
+  let add elt = dom_add ~parent:root elt in
+  let add_top elt = dom_add ~parent:top elt in
   let filter_box = Dom_html.createInput doc in
   let add_group_checkbox group_spec =
 	let check_span = Dom_html.createSpan doc in
 	let check_group = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-	Jsutil.textNode group_spec#name |> (domAdd ~parent:check_span);
-	domAdd ~parent:check_span check_group;
+	Jsutil.textNode group_spec#name |> (dom_add ~parent:check_span);
+	dom_add ~parent:check_span check_group;
 	check_span##className <- (Js.string "tournabox-menu-checkspan");
-	addTop check_span;
+	add_top check_span;
 	(check_group, group_spec)
   in
   let filter_span = Dom_html.createSpan doc in
   let _ =
 	root##className <- (Js.string "tournabox-root");
-	domAdd ~parent:container root;
+	dom_add ~parent:container root;
 	top_wrapper##className <- (Js.string "tournabox-menu-wrapper");
 	top##className <- (Js.string "tournabox-menu");
 	add top_wrapper;
-	domAdd ~parent:top_wrapper top;
+	dom_add ~parent:top_wrapper top;
 	add inner;
-	domAdd ~parent:filter_span (Jsutil.textNode "Filter: ");
+	dom_add ~parent:filter_span (Jsutil.textNode "Filter: ");
 	filter_span##className <- (Js.string "tournabox-filter-span");
 	filter_box##className <- (Js.string "tournabox-filter-input");
-	domAdd ~parent:filter_span filter_box;
-	domAdd ~parent:top filter_span; in
+	dom_add ~parent:filter_span filter_box;
+	dom_add ~parent:top filter_span; in
   let add = add_group_checkbox in
   let especs = List.map add (chosen_specs groups_requested) in
   let emake (check, spec) = EGroup (check, spec) in

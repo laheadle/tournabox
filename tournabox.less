@@ -1,8 +1,12 @@
 /* -*- mode: css -*- */
 
 .tournabox-container {
+/* fixme
+	& * { box-sizing: content-box; }
+    & *:after { box-sizing: content-box; }
+    & *:before { box-sizing: content-box; }
 	.tournabox-root {
-
+*/
 		.tournabox-menu-wrapper {
 			background-color: #D5EBED;
 
@@ -21,7 +25,7 @@
 			}
 		}
 
-		.tournabox-outer-table {
+		.tournabox-group {
 			margin-top: 10px;
 			.tournabox-header-row {
 				.tournabox-header {
@@ -31,7 +35,7 @@
 				}
 			}
 			.tournabox-row {
-				.tournabox-cell { font-style: italic; padding: 2px 1px 1px 1px; }
+				.tournabox-cell { font-style: italic; padding: 2px 4px 1px 1px; }
 				.tournabox-lost { color: red }
 				.tournabox-won { color: green }
 				.tournabox-willFace { color: blue }
