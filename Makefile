@@ -7,9 +7,10 @@ JSO_DEBUG_FLAGS := +weak.js --enable excwrap --debuginfo --pretty --noinline
 js:
 	ocamlbuild $(FLAGS) tournabox.byte
 	js_of_ocaml tournabox.byte
+	lessc tournabox.less tournabox.css
 
 dev: js
-	cp ./tournabox.js ./tst.html ~/Downloads/
+	cp ./tournabox.css ./tournabox.js ./tst.html ~/Downloads/
 
 test: js
 	ocamlbuild $(DEBUG_FLAGS) test_dom_methods.byte

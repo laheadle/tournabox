@@ -296,7 +296,7 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 	let num_choices = List.length choices in
 	let { Ttypes.header_str; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
-	let table = Jsutil.table (Some "tournabox-outerTable") in
+	let table = Jsutil.table (Some "tournabox-outer-table") in
 	let header = Dom_html.createTr doc in
 	header##className <- Js.string "tournabox-header-row";
 	Jsutil.addTd header header_str (Some "tournabox-header");
@@ -304,6 +304,7 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 	let has_matches = ref false in
 	let do_choice i choice =
 	  let row = Dom_html.createTr doc in
+	  row##className <- (Js.string "tournabox-row");
 	  let columns =
 		grouping_spec#column_extractor num_choices i choice in
 	  let matches =
@@ -318,7 +319,10 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 		has_matches := true;
 		List.iter
 		  (fun { Ttypes.class_name; content } ->
-			Jsutil.addTd row content class_name)
+			Jsutil.addTd row content
+			  (Some ("tournabox-cell " ^
+						(match class_name with None -> ""
+						| Some str -> str))))
 		  columns;
 		Dom.appendChild table row
 	  end
@@ -440,11 +444,12 @@ let enter_main_loop state =
   main_loop state
 
 let show container groups_requested filters_requested tourney =
+  let domAdd ~parent child = Dom.appendChild parent child in
+  let root =  Dom_html.createDiv doc in
   let inner = Dom_html.createDiv doc in
   let top = Dom_html.createDiv doc in
   let top_wrapper = Dom_html.createDiv doc in
-  let domAdd ~parent child = Dom.appendChild parent child in
-  let add elt = domAdd ~parent:container elt in
+  let add elt = domAdd ~parent:root elt in
   let addTop elt = domAdd ~parent:top elt in
   let filter_box = Dom_html.createInput doc in
   let add_group_checkbox group_spec =
@@ -458,13 +463,16 @@ let show container groups_requested filters_requested tourney =
   in
   let filter_span = Dom_html.createSpan doc in
   let _ =
+	root##className <- (Js.string "tournabox-root");
+	domAdd ~parent:container root;
 	top_wrapper##className <- (Js.string "tournabox-menu-wrapper");
 	top##className <- (Js.string "tournabox-menu");
 	add top_wrapper;
 	domAdd ~parent:top_wrapper top;
 	add inner;
 	domAdd ~parent:filter_span (Jsutil.textNode "Filter: ");
-	filter_span##className <- (Js.string "tournabox-filterBox");
+	filter_span##className <- (Js.string "tournabox-filter-span");
+	filter_box##className <- (Js.string "tournabox-filter-input");
 	domAdd ~parent:filter_span filter_box;
 	domAdd ~parent:top filter_span; in
   let add = add_group_checkbox in
