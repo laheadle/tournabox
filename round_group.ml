@@ -63,28 +63,30 @@ let o =
 		this_group = round_matches && not already
 	  }
 	method column_extractor num pos choice =
+	  let open Columns in
 	  let columns = match choice with
 		| { C.entry_pair = Some (Somebody a),
-			Some Bye; winner = _ } ->
-		  [ (Entry.to_string a), None, true;
-			"advanced", (Some "tournabox-won"), false;
-			"with a bye", None, true ]
+			Some Bye; winner = _ } -> [
+		  entry a;
+		  advanced;
+		  with_a_bye
+		]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = Some (Somebody c) } ->
 		  let loser = if c = a then b else a in
-		  [ (Entry.to_string c), None, true;
-			"defeated", (Some "tournabox-won"), false;
-			(Entry.to_string loser), None, true ]
+		  [ entry c;
+			defeated;
+			entry loser ]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = None } ->
-		  [ (Entry.to_string a), None, true;
-			"will face", (Some "tournabox-willFace"), false;
-			(Entry.to_string b), None, true ]
+		  [ entry a;
+			will_face;
+			entry b; ]
 		| { C.entry_pair = Some (Somebody a), None; _ } ->
-		  [ (Entry.to_string a), None, true;
-			"will face", (Some "tournabox-willFace"), false;
-			"(To be decided)", None, false ]
+		  [ entry a;
+			will_face;
+			to_be_decided ]
 		| _ ->
 		  failwith "BUG: Invalid Column" in
-	  List.map Ttypes.make_column columns
+	  columns
    end)

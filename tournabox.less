@@ -5,8 +5,9 @@
 	& * { box-sizing: content-box; }
     & *:after { box-sizing: content-box; }
     & *:before { box-sizing: content-box; }
-	.tournabox-root {
 */
+	.tournabox-root {
+
 		.tournabox-menu-wrapper {
 			background-color: #D5EBED;
 
@@ -35,12 +36,26 @@
 				}
 			}
 			.tournabox-row {
-				.tournabox-cell { font-style: italic; padding: 2px 4px 1px 1px; }
+				vertical-align: baseline;
+
+				.tournabox-entry { font-style: italic; padding: 0; }
 				.tournabox-lost { color: red }
 				.tournabox-won { color: green }
 				.tournabox-willFace { color: blue }
+
+				.tournabox-seeded {
+					.tournabox-name {
+						border-bottom: 1px solid blue;
+					}
+					.tournabox-seed {
+						color: blue;
+						&:before { content: ' ['; }
+						&:after { content: ']'; }
+						vertical-align: super;
+					}
+				}
 			}
 		}
-
-	}
+	}	
 }
+

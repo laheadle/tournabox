@@ -4,18 +4,29 @@ type group_result =  {
   this_group: bool;
 }
 
+(* non-nested html tag *)
+type shallow_elt = {
+  tag: string;
+  class_name: string;
+  text: string;
+}
+
+type column_fragment =
+  Text of string
+| Elt of shallow_elt
+
 type column = {
-  content: string;
+  content: column_fragment list;
   class_name: string option;
   should_filter: bool;
 }
+
+val column_content_string: column_fragment list -> string
 
 type header_spec = {
   header_str: string;
   should_filter_header: bool;
 }
-
-val make_column: string * string option * bool -> column
 
 class type ['a] grouping_spec = object
   method name:string

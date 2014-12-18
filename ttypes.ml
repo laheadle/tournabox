@@ -4,11 +4,28 @@ type group_result =  {
   this_group: bool;
 }
 
+
+(* non-nested html tag *)
+type shallow_elt = {
+  tag: string;
+  class_name: string;
+  text: string;
+}
+
+type column_fragment =
+  Text of string
+| Elt of shallow_elt
+
 type column = {
-  content: string;
+  content: column_fragment list;
   class_name: string option;
   should_filter: bool;
 }
+
+let column_content_string fragments =
+  let f = function | Text s -> s | Elt {text} -> text in
+  let strings = List.map f fragments in
+  List.fold_left (^) "" strings
 
 type header_spec = {
   header_str: string;
@@ -25,6 +42,4 @@ class type ['a] grouping_spec = object
 end
 
 
-let make_column (content, class_name, should_filter) = 
-  { content; class_name; should_filter}
 

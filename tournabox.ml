@@ -291,6 +291,25 @@ let or_filter_matches or_filter str =
 
 let dom_add ~parent child = Dom.appendChild parent child
 
+let add_column row { Ttypes.class_name; content } =
+  let td = Dom_html.createTd Jsutil.doc in
+  Jsutil.set_classname td class_name;
+  
+  let add_fragment = function
+	| Ttypes.Text txt ->
+	  Dom.appendChild td (Jsutil.textNode txt);
+	| Ttypes.Elt {Ttypes.tag;class_name;text} ->
+	  let elt = match tag with
+		  "span" -> Dom_html.createSpan Jsutil.doc
+		| _ -> assert false
+	  in
+	  Dom.appendChild elt (Jsutil.textNode text);
+	  elt##className <- (Js.string class_name);
+	  Dom.appendChild td elt
+  in
+  List.iter add_fragment content;
+  Dom.appendChild row td
+
 let render_groups tourney container groups grouping_spec (filter: or_filter) =
   let num_rounds = num_rounds tourney in
   let num_groups = List.length groups in
@@ -314,17 +333,15 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 		  (fun { Ttypes.content;
 				 should_filter;
 				 class_name = _ } -> 
+			let content = Ttypes.column_content_string content in
 			(should_filter_header && (or_filter_matches filter header_str)) ||
 			  (should_filter && or_filter_matches filter content))
 		  columns in
 	  if matches then begin
 		has_matches := true;
 		List.iter
-		  (fun { Ttypes.class_name; content } ->
-			Jsutil.addTd row content
-			  (Some ("tournabox-cell " ^
-						(match class_name with None -> ""
-						| Some str -> str))))
+		  (fun column ->
+			add_column row column)
 		  columns;
 		dom_add ~parent:group_elt row
 	  end
@@ -407,7 +424,7 @@ let rec main_loop state =
 	Lwt.return ())
 
 let chosen_specs groups_requested =
-  let all = [ Round_group.o; Performance_group.o; Country_group.o; Seed_group.o ] in
+  let all = [ Round_group.o; (* Performance_group.o; Country_group.o; Seed_group.o *) ] in
   let group_exists group_name =
 	List.exists (fun spec ->
 	  (String.lowercase group_name) = (String.lowercase spec#name))
