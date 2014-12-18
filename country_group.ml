@@ -28,37 +28,35 @@ let o = let open Entry in object
 	  let p = fetch p in p.country)
   }
   method column_extractor num pos choice =
+	let open Columns in
 	let columns =
 	  match choice with
 	   { C.entry_pair = Some (Somebody a),
 		  Some Bye; winner = _; round } ->
-		[ (to_string a), None, true;
-		  "Advanced", Some "tournabox-won", false;
-		  "with a bye", None, false;
-		  "In round " ^ string_of_int (round + 1), None, false]
+		[ entry a;
+		  advanced;
+		  with_a_bye;
+		  in_round (round + 1)]
 	  | { C.entry_pair = Some (Somebody a),
 		  Some (Somebody b); winner = Some (Somebody c); round } ->
-		let outcome = if c = a then "Defeated" else "Was defeated by" in
-		[ (to_string a), None, true;
-		  outcome,
-		  (Some (if c = a then "tournabox-won" else "tournabox-lost")),
-		  false;
-		  (to_string b), None, false;
-		  "In round " ^ string_of_int (round + 1), None, false]
+		let outcome = if c = a then defeated else was_defeated_by in
+		[ entry a;
+		  outcome;
+		  entry ~filterable:false b;
+		  in_round (round + 1)]
 	  | { C.entry_pair = Some (Somebody a),
 		  Some (Somebody b); winner = None ; round } ->
-		[  (to_string a), None, true;
-		   "Will Face", (Some "tournabox-willFace"), false;
-		   (to_string b), None, false;
-		   "In round " ^ string_of_int (round + 1), None, false ]
+		[  entry a;
+		   will_face;
+		   entry ~filterable:false b;
+		  in_round (round + 1)]
 	  | { C.entry_pair = Some (Somebody a), None;
 		  winner = None ; round } ->
 		[
-		  (to_string a), None, true;
-		  "Will face", (Some "tournabox-willFace"), false;
-		  "To Be Determined", None, false;
-		  "In round " ^ string_of_int (round + 1), None, false
-		]
+		  entry a;
+		  will_face;
+		  to_be_decided;
+		  in_round (round + 1)]
 	  | _ -> failwith "bug" in
-	List.map Ttypes.make_column columns
+	columns
 end

@@ -1,8 +1,5 @@
 module C = Choice
 
-let in_round num pos =
-  ("In round " ^ (string_of_int (num - pos))), None, false
-
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let o = let open Entry in object
   method header_spec ~num_rounds ~num_groups ~pos:round lst =
@@ -33,36 +30,35 @@ let o = let open Entry in object
   }
 
   method column_extractor num pos choice =
-	let in_round = in_round num pos in
+	let open Columns in
+	let in_round = in_round (num - pos) in
 	let columns =
 	  match choice with
 	  | { C.entry_pair = Some _, Some Bye; winner = _ } ->
-		[  "Advanced", (Some "tournabox-won"), false;
-		   "With a Bye", None, false;
+		[  advanced;
+		   with_a_bye;
 		   in_round ]
 	  | { C.entry_pair =
 		  Some _,
 		  Some (Somebody b);
 		  winner = Some (Somebody c) } ->
-		let outcome = if c = b then "Was defeated by" else "Defeated" in
-		[ outcome,
-		  (Some (if c = b then "tournabox-lost" else "tournabox-won")),
-		  false;
-		  (to_string b), None, false;
+		let outcome = if c = b then was_defeated_by else defeated in
+		[ outcome;
+		  entry ~filterable:false b;
 		  in_round ]
 	  | { C.entry_pair = Some (Somebody a), Some (Somebody b);
 		  winner = None } ->
 		[
-		  "Will face", (Some "tournabox-willFace"), false;
-		  (to_string b), None, false;
+		  will_face;
+		  entry ~filterable:false b;
 		  in_round ]
 	  | { C.entry_pair = Some (Somebody a),None;
 		  winner = None } ->
 		[
-		  "Will face", (Some "tournabox-willFace"), false;
-		  "To be determined", None, false;
+		  will_face;
+		  to_be_decided;
 		  in_round
 		]
 	  | _ -> failwith "bug" in
-	List.map Ttypes.make_column columns
+	columns
 end

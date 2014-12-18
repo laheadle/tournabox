@@ -7,10 +7,11 @@
     & *:before { box-sizing: content-box; }
 */
 	.tournabox-root {
-		padding: 10px;
-		overflow: scroll;
-		border: 3px solid green;
+		overflow: auto;
+		padding-bottom: 5px;
+		border: 1px solid green;
 		font-size: 14px;
+		display: inline-block;
 
 		.tournabox-menu-wrapper {
 			background-color: #D5EBED;
@@ -32,6 +33,8 @@
 
 		.tournabox-group {
 			margin-top: 10px;
+			padding: 0 4px 0 4px;
+
 			.tournabox-header-row {
 				.tournabox-header {
 					font-weight: bold;
@@ -43,13 +46,14 @@
 				vertical-align: baseline;
 				line-height: 1;
 
+				td { min-width: 140px; }
 				.tournabox-entry { font-style: italic; padding: 0 4px 0 0; }
 				.tournabox-was-defeated-by { color: red }
 				.tournabox-defeated { color: green }
 				.tournabox-advanced { color: green; text-decoration: underline; }
 				.tournabox-will-face { color: blue }
 
-				.tournabox-in-round { 
+				.tournabox-in-round {
 					.tournabox-round {
 						margin-left: 5px;
 						text-decoration: underline;
@@ -57,15 +61,21 @@
 					}
 				}
 
+				.tournabox-country {
+					margin-left: 4px;
+					color: purple;
+					font-size: .8em;
+				}
+
 				.tournabox-seeded {
 					.tournabox-name {
-						border-bottom: 1px solid blue;
 					}
 					.tournabox-seed {
 						color: blue;
 						&:before { content: ' ['; }
 						&:after { content: ']'; }
 						vertical-align: super;
+						font-size: .8em;
 					}
 				}
 			}

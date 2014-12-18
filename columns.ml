@@ -18,7 +18,7 @@ struct
   let round = "tournabox-round"
 end
 
-let entry e =
+let entry ?(filterable=true) e =
   let (class_name, seed) = 
 	match e.Entry.seed with
 	  Some s ->
@@ -36,7 +36,7 @@ let entry e =
   in  {
 	content;
 	class_name=Some (Classes.entry ^ " " ^ class_name);
-	should_filter=true
+	should_filter=filterable
   }
 
 let in_round r =  {
@@ -53,7 +53,7 @@ let in_round r =  {
 }
 
 let advanced = {
-  content=[Text "Advanced"];
+  content=[Text "advanced"];
   class_name=Some Classes.advanced;
   should_filter=false
 }
