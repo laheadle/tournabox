@@ -14,6 +14,8 @@ struct
   let was_defeated_by ="tournabox-was-defeated-by"
   let will_face="tournabox-will-face"
   let to_be_decided = "tournabox-to-be-decided"
+  let in_round = "tournabox-in-round"
+  let round = "tournabox-round"
 end
 
 let entry e =
@@ -37,6 +39,19 @@ let entry e =
 	should_filter=true
   }
 
+let in_round r =  {
+  content=[
+	Text "In round";
+	Elt {
+	  tag="span";
+	  class_name=Classes.round;
+	  text=string_of_int r;
+	}
+  ];
+  class_name=Some Classes.in_round;
+  should_filter=false
+}
+
 let advanced = {
   content=[Text "Advanced"];
   class_name=Some Classes.advanced;
@@ -55,13 +70,17 @@ let defeated = {
   should_filter=false
 }
 
+let was_defeated_by = {
+  content=[Text "was defeated by"];
+  class_name=Some Classes.was_defeated_by;
+  should_filter=false
+}
 
 let will_face = {
   content=[Text "will face"];
   class_name=Some Classes.will_face;
   should_filter=false
 }
-
 
 let to_be_decided = {
   content=[Text "To be decided"];

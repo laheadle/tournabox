@@ -23,30 +23,30 @@ let o =
 		| _ -> failwith "BUG: Bad choice for group")
 	}
 	method column_extractor num pos choice =
+	  let open Columns in
+	  let in_round = in_round (num - pos) in
 	  let columns =
 		match choice with
 		| { C.entry_pair = Some (Somebody a), Some Bye; winner = _ } ->
-		  [ "Advanced", Some "tournabox-won", false;
-			"With a bye", None, false;
-			("In round " ^ (string_of_int (num - pos))), None, false ]
+		  [ advanced;
+			with_a_bye;
+			in_round;]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = Some (Somebody c) } ->
-		  let outcome = if c = a then "Defeated" else "Was defeated by" in
-		  [ outcome,
-			Some (if c = a then "tournabox-won" else "tournabox-lost"),
-			false;
-			(Entry.to_string b), None, false;
-			("In round " ^ (string_of_int (num - pos))), None, false ]
+		  let outcome = if c = a then defeated else was_defeated_by in
+		  [ outcome;
+			entry b;
+			in_round]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = None } ->
-		  [ "Will face", Some "tournabox-willFace", false;
-			(Entry.to_string b), None, false;
-			("In round " ^ (string_of_int (num - pos))), None, false ]
+		  [ will_face;
+			entry b;
+			in_round]
 		| { C.entry_pair = Some (Somebody a),
 			None; winner = None } ->
-		  [ "Will face", Some "tournabox-willFace", false;
-			"To be determined", None, false;
-			("In round " ^ (string_of_int (num - pos))), None, false ]
+		  [ will_face;
+			to_be_decided;
+			in_round]
 		| _ -> failwith "BUG: Invalid Column" in
-	  List.map Ttypes.make_column columns
+	  columns
    end)
