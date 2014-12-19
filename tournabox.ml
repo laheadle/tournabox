@@ -34,7 +34,7 @@ let log_2 len =
 	
 let num_rounds tourney =
   let len = Array.length tourney.rounds.(0) in
-  Printf.printf "%d rounds" (log_2 len + 1);
+  Printf.printf "%d rounds\n" (log_2 len + 1);
   log_2 len + 1
 
 let entries tourney = tourney.entries
@@ -126,7 +126,7 @@ let rec won tourney index =
 	else
 	  tourney
   in
-  Printf.printf "won %d %d" index (playing tourney index); flush_all();
+  Printf.printf "won %d %d\n" index (playing tourney index); flush_all();
   impl index (playing tourney index)
 
 
@@ -181,7 +181,7 @@ let init entries_list =
 	  if choice_index < Array.length round then
 		let tourney =
 		  match round.(choice_index) with
-			{ C.entry_pair = Some a, Some b } ->
+			{ C.entry_pair = Some a, Some b; winner=None } ->
 			  if is_true byes a then
 				(won tourney b)
 			  else if is_true byes b then
