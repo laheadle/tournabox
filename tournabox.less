@@ -1,11 +1,6 @@
 /* -*- mode: css -*- */
 
 .tournabox-container {
-/* fixme
-	& * { box-sizing: content-box; }
-    & *:after { box-sizing: content-box; }
-    & *:before { box-sizing: content-box; }
-*/
 	.tournabox-root {
 		overflow: auto;
 		padding-bottom: 5px;
@@ -13,26 +8,28 @@
 		font-size: 16px;
 		display: inline-block;
 		color: black;
+		min-width: 730px;
 
 		.tournabox-menu-wrapper {
 			background-color: #D5EBED;
-			position: absolute;
-			min-width: 730px;
 
 			.tournabox-menu {
+				position: relative;
 				padding: 6px;
 				.tournabox-filter-span { 
 					position: absolute;
 					right: 0;
-					top: 0;
-					margin-top: 3px;
+					top: 6px;
 				} 
 				input[type="checkbox"] {
-					margin: 0 20px 0 0;
+					margin: 0 20px 0 4px;
 					vertical-align: middle;
 				}
 				.tournabox-filter-input {
+					box-sizing: border-box;
+					height: 20px;
 					border-radius: 5px;
+					padding: 0;
 				}
 			}
 		}
