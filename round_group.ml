@@ -46,7 +46,7 @@ let o =
 		| 1 -> "Semifinals"
 		| 2 -> "Quarterfinals"
 		| _ -> (Printf.sprintf
-				  "Round %d (%d matches)"
+				  "Round %d (%d completed)"
 				  (num_rounds - this_round)
 				  len)
 	  in
