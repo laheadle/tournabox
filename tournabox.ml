@@ -506,7 +506,7 @@ let enter_main_loop state =
 
 let show container groups_requested filters_requested tourney =
   let root =  Dom_html.createDiv doc in
-  let results = Dom_html.createDiv doc in
+  let results = Dom_html.createTable doc in
   results##className <- (Js.string "tournabox-results");
   let top = Dom_html.createDiv doc in
   let top_wrapper = Dom_html.createDiv doc in

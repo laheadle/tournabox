@@ -35,12 +35,12 @@ let o =
 			Some (Somebody b); winner = Some (Somebody c) } ->
 		  let outcome = if c = a then defeated else was_defeated_by in
 		  [ outcome;
-			entry b;
+			entry  ~filterable:false b;
 			in_round]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = None } ->
 		  [ will_face;
-			entry b;
+			entry  ~filterable:false b;
 			in_round]
 		| { C.entry_pair = Some (Somebody a),
 			None; winner = None } ->
