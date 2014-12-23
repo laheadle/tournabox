@@ -7,7 +7,9 @@
 		font-size: 16px;
 		display: inline-block;
 		color: black;
-		min-width: 730px;
+		@media (min-width:768px) {
+			min-width: 730px;
+		}
 		font-family: Arial, Sans Serif;
 
 		.tournabox-menu {
@@ -35,7 +37,9 @@
 			border-spacing: 0px;
 			overflow: auto;
 			padding: 4px;
-			min-width: 728px;
+			@media (min-width:768px) {
+				min-width: 728px;
+			}
 
 			.tournabox-header-row {
 				.tournabox-header {
@@ -64,6 +68,8 @@
 				}
 				.tournabox-was-defeated-by { color: red }
 				.tournabox-defeated { color: green }
+				.tournabox-upset { color: lighten(color(green), 20%) }
+				.tournabox-was-upset-by { color: lighten(color(red), 20%) }
 				.tournabox-advanced {
 					color: green;
 					text-decoration: underline;

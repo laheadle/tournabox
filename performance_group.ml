@@ -33,7 +33,8 @@ let o =
 			in_round;]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = Some (Somebody c) } ->
-		  let outcome = if c = a then defeated else was_defeated_by in
+		  let winner, loser = if c = a then a, b else b,a in
+		  let outcome = if c = a then defeated ~winner loser else was_defeated_by ~winner loser in
 		  [ outcome;
 			entry  ~filterable:false b;
 			in_round]

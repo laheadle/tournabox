@@ -16,6 +16,8 @@ struct
   let to_be_decided = "tournabox-to-be-decided"
   let in_round = "tournabox-in-round"
   let round = "tournabox-round"
+  let upset = "tournabox-upset"
+  let was_upset_by = "tournabox-was-upset-by"
 end
 
 let entry ?(filterable=true) e =
@@ -64,17 +66,40 @@ let with_a_bye = {
   should_filter=false
 }
 
-let defeated = {
-  content=[Text "defeated"];
-  class_name=Some Classes.defeated;
-  should_filter=false
-}
+let defeated ~winner loser =
+  let upset = 	{
+	  content=[Text "upset"];
+	  class_name=Some Classes.upset;
+	  should_filter=false
+	}
+  in
+  match winner.Entry.seed, loser.Entry.seed with
+	None, Some _ -> upset
+  | Some a, Some b when a > b -> upset
+  | _ ->
+	{
+	  content=[Text "defeated"];
+	  class_name=Some Classes.defeated;
+	  should_filter=false
+	}
 
-let was_defeated_by = {
-  content=[Text "was defeated by"];
-  class_name=Some Classes.was_defeated_by;
-  should_filter=false
-}
+let was_defeated_by ~winner loser =
+  let upset = 	{
+	  content=[Text "was upset by"];
+	  class_name=Some Classes.was_upset_by;
+	  should_filter=false
+	}
+  in
+  match winner.Entry.seed, loser.Entry.seed with
+	None, Some _ -> upset
+  | Some a, Some b when a > b -> upset
+  | _ ->
+	{
+	  content=[Text "was defeated by"];
+	  class_name=Some Classes.was_defeated_by;
+	  should_filter=false
+	}
+
 
 let will_face = {
   content=[Text "will face"];

@@ -39,10 +39,12 @@ let o = let open Entry in object
 		   with_a_bye;
 		   in_round ]
 	  | { C.entry_pair =
-		  Some _,
+		  Some (Somebody a),
 		  Some (Somebody b);
 		  winner = Some (Somebody c) } ->
-		let outcome = if c = b then was_defeated_by else defeated in
+		let winner, loser = if c = a then a, b else b,a in
+		let outcome = if c = b then was_defeated_by ~winner loser 
+		  else defeated ~winner loser in
 		[ outcome;
 		  entry ~filterable:false b;
 		  in_round ]

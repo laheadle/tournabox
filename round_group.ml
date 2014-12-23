@@ -73,9 +73,9 @@ let o =
 		]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = Some (Somebody c) } ->
-		  let loser = if c = a then b else a in
+		  let winner, loser = if c = a then a, b else b, a in
 		  [ entry c;
-			defeated;
+			defeated ~winner loser;
 			entry loser ]
 		| { C.entry_pair = Some (Somebody a),
 			Some (Somebody b); winner = None } ->
