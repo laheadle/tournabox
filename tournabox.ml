@@ -340,7 +340,18 @@ let add_group_to_results results = function
 	dom_add ~parent:results table
   | Rows (header, rows) ->
 	dom_add ~parent:results header;
-	List.iter (dom_add ~parent:results) !rows
+	let i = ref 0 in
+	List.iter (fun x ->
+	  begin
+		match !i mod 2 with
+		  0 ->
+			x##className <- (Js.string ((Js.to_string x##className) ^ " tournabox-even"))
+		| _ ->
+		  x##className <- (Js.string ((Js.to_string x##className) ^ " tournabox-odd"))
+	  end;
+	  incr i;
+	  dom_add ~parent:results x
+	) !rows
 
 let render_groups tourney results groups grouping_spec (filter: or_filter) =
   let num_rounds = num_rounds tourney in
