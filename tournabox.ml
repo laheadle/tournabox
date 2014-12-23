@@ -310,18 +310,49 @@ let add_column row { Ttypes.class_name; content } =
   List.iter add_fragment content;
   Dom.appendChild row td
 
-let render_groups tourney container groups grouping_spec (filter: or_filter) =
+(* Compile-time flag: Two different ways of rendering; Either a bunch
+   of tables, or a single table with a bunch of rows. *)
+let use_tables = false
+
+type 'a group_elt =
+| Table of Dom_html.tableElement Js.t
+(* Header, Rows *)
+| Rows of (Dom_html.tableRowElement Js.t) * ('a list ref)
+
+let make_group_elt header =
+  match use_tables with
+	true ->
+	  let table = Jsutil.table (Some "tournabox-group") in
+	  dom_add ~parent:table header;
+	  Table table
+  | _ -> 
+	Rows (header, ref [])
+
+let add_row_to_group group_elt row =
+  match group_elt with
+	Table table ->
+	  dom_add ~parent:table row
+  | Rows (_, lst)
+	-> lst := !lst @ [row]
+
+let add_group_to_results results = function
+  | Table table ->
+	dom_add ~parent:results table
+  | Rows (header, rows) ->
+	dom_add ~parent:results header;
+	List.iter (dom_add ~parent:results) !rows
+
+let render_groups tourney results groups grouping_spec (filter: or_filter) =
   let num_rounds = num_rounds tourney in
   let num_groups = List.length groups in
   let do_choices groupi choices =
 	let num_choices = List.length choices in
 	let { Ttypes.header_str; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
-	let group_elt = Jsutil.table (Some "tournabox-group") in
 	let header = Dom_html.createTr doc in
 	header##className <- Js.string "tournabox-header-row";
 	Jsutil.addTd header header_str (Some "tournabox-header");
-	dom_add ~parent:group_elt header;
+	let group_elt = make_group_elt header in
 	let has_matches = ref false in
 	let do_choice i choice =
 	  let row = Dom_html.createTr doc in
@@ -343,12 +374,12 @@ let render_groups tourney container groups grouping_spec (filter: or_filter) =
 		  (fun column ->
 			add_column row column)
 		  columns;
-		dom_add ~parent:group_elt row
+		add_row_to_group group_elt row
 	  end
 	in
 	List.iteri do_choice choices;
 	if !has_matches then begin
-	  dom_add ~parent:container group_elt
+	  add_group_to_results results group_elt
 	end
   in
   List.iteri do_choices groups
@@ -366,12 +397,12 @@ type 'node state = {
   all_ops: op list;
   check_boxes: check list;
   tourney: tourney;
-  inner: 'node;
+  results: 'node;
   filter_box: Dom_html.inputElement Js.t
 }
 
 let select_and_render state =
-  delete_children state.inner;
+  delete_children state.results;
   let positive = state.current_check_box in
   positive##checked <- Js._true;
   List.iter (fun negative -> negative##checked <- Js._false)
@@ -390,7 +421,7 @@ let select_and_render state =
 	EGroup (check, espec) ->
 	  let groups = select_grouped espec state.tourney in
 	  Printf.printf "Selected %d groups" (List.length groups); flush_all();
-	  render_groups state.tourney state.inner groups espec filter
+	  render_groups state.tourney state.results groups espec filter
   | _ -> failwith "BUG: get_espec"
 
 let rec main_loop state =
@@ -464,7 +495,8 @@ let enter_main_loop state =
 
 let show container groups_requested filters_requested tourney =
   let root =  Dom_html.createDiv doc in
-  let inner = Dom_html.createDiv doc in
+  let results = Dom_html.createDiv doc in
+  results##className <- (Js.string "tournabox-results");
   let top = Dom_html.createDiv doc in
   let top_wrapper = Dom_html.createDiv doc in
   let add elt = dom_add ~parent:root elt in
@@ -487,7 +519,7 @@ let show container groups_requested filters_requested tourney =
 	top##className <- (Js.string "tournabox-menu");
 	add top_wrapper;
 	dom_add ~parent:top_wrapper top;
-	add inner;
+	add results;
 	dom_add ~parent:filter_span (Jsutil.textNode "Filter: ");
 	filter_span##className <- (Js.string "tournabox-filter-span");
 	filter_box##className <- (Js.string "tournabox-filter-input");
@@ -504,7 +536,7 @@ let show container groups_requested filters_requested tourney =
 	all_ops = List.map emake especs;
 	check_boxes = List.map get_check especs;
 	tourney;
-	inner;
+	results;
 	filter_box
   } in
   ignore(enter_main_loop state)

@@ -2,6 +2,7 @@
 
 .tournabox-container {
 	.tournabox-root {
+		overflow: auto;
 		padding-bottom: 5px;
 		border: 1px solid green;
 		font-size: 16px;
@@ -9,58 +10,54 @@
 		color: black;
 		min-width: 730px;
 
-		.tournabox-menu {
+		.tournabox-menu-wrapper {
 			background-color: #D5EBED;
-			position: relative;
-			padding: 6px;
-			.tournabox-filter-span { 
-				position: absolute;
-				right: 0;
-				top: 6px;
-			} 
-			input[type="checkbox"] {
-				margin: 0 20px 0 4px;
-				vertical-align: middle;
-			}
-			.tournabox-filter-input {
-				box-sizing: border-box;
-				border-radius: 5px;
-				padding: 0;
+
+			.tournabox-menu {
+				position: relative;
+				padding: 6px;
+				.tournabox-filter-span { 
+					position: absolute;
+					right: 0;
+					top: 6px;
+				} 
+				input[type="checkbox"] {
+					margin: 0 20px 0 4px;
+					vertical-align: middle;
+				}
+				.tournabox-filter-input {
+					box-sizing: border-box;
+					height: 20px;
+					border-radius: 5px;
+					padding: 0;
+				}
 			}
 		}
 
-		.tournabox-results {
+		table {
 			border-collapse: separate;
-			overflow: auto;
-			padding: 4px;
+		}
 
+		.tournabox-group {
+			margin-top: 10px;
+			padding: 0 4px 0 4px;
 
 			.tournabox-header-row {
 				.tournabox-header {
-					padding: 4px;
 					font-weight: bold;
 					font-style: italic;
 					font-size: 1.2em
 				}
 			}
-
 			.tournabox-row {
 				vertical-align: baseline;
 				line-height: 1;
 
-				td:first-child {
-					padding-left: 7px;
-				}
-				.tournabox-entry {
-					font-style: italic;
-					padding: 0 4px 0 0;
-				}
+				td { min-width: 140px; }
+				.tournabox-entry { font-style: italic; padding: 0 4px 0 0; }
 				.tournabox-was-defeated-by { color: red }
 				.tournabox-defeated { color: green }
-				.tournabox-advanced {
-					color: green;
-					text-decoration: underline;
-				}
+				.tournabox-advanced { color: green; text-decoration: underline; }
 				.tournabox-will-face { color: blue }
 
 				.tournabox-in-round {
@@ -79,10 +76,9 @@
 
 				.tournabox-seeded {
 					.tournabox-name {
-						color: darken(color(blue), 20%);
 					}
 					.tournabox-seed {
-						font-weight: bold;
+						color: blue;
 						&:before { content: ' ['; }
 						&:after { content: ']'; }
 						vertical-align: super;
