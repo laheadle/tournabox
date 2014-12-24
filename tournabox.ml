@@ -315,30 +315,15 @@ let add_column row { Ttypes.class_name; content } =
 let use_tables = false
 
 type 'a group_elt =
-| Table of Dom_html.tableElement Js.t
-(* Header, Rows *)
-| Rows of (Dom_html.tableRowElement Js.t) * ('a list ref)
+  (* Header, Rows *)
+  (Dom_html.tableRowElement Js.t) * ('a list ref)
 
-let make_group_elt header =
-  match use_tables with
-	true ->
-	  let table = Jsutil.table (Some "tournabox-group") in
-	  dom_add ~parent:table header;
-	  Table table
-  | _ -> 
-	Rows (header, ref [])
+let make_group_elt header = (header, ref [])
 
-let add_row_to_group group_elt row =
-  match group_elt with
-	Table table ->
-	  dom_add ~parent:table row
-  | Rows (_, lst)
-	-> lst := !lst @ [row]
+let add_row_to_group (_, lst) row =
+  lst := !lst @ [row]
 
-let add_group_to_results results = function
-  | Table table ->
-	dom_add ~parent:results table
-  | Rows (header, rows) ->
+let add_group_to_results results (header, rows) =
 	dom_add ~parent:results header;
 	let i = ref 0 in
 	List.iter (fun x ->
@@ -376,7 +361,7 @@ let render_groups tourney results groups grouping_spec (filter: or_filter) =
 				 should_filter;
 				 class_name = _ } -> 
 			let content = Ttypes.column_content_string content in
-			let header_content = Ttypes.column_content_string header.content in
+			let header_content = Ttypes.(column_content_string header.content) in
 			(should_filter_header && (or_filter_matches filter header_content)) ||
 			  (should_filter && or_filter_matches filter content))
 		  columns in
