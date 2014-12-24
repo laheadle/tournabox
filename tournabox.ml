@@ -291,7 +291,7 @@ let or_filter_matches or_filter str =
 
 let dom_add ~parent child = Dom.appendChild parent child
 
-let add_column row { Ttypes.class_name; content } =
+let add_td row { Ttypes.class_name; content } =
   let td = Dom_html.createTd Jsutil.doc in
   Jsutil.set_classname td class_name;
   
@@ -308,52 +308,29 @@ let add_column row { Ttypes.class_name; content } =
 	  Dom.appendChild td elt
   in
   List.iter add_fragment content;
-  Dom.appendChild row td
+  Dom.appendChild row td;
+  td;
 
-(* Compile-time flag: Two different ways of rendering; Either a bunch
-   of tables, or a single table with a bunch of rows. *)
-let use_tables = false
+type ('header, 'row) group =
+  'header * ('row list ref)
 
-type 'a group_elt =
-  (* Header, Rows *)
-  (Dom_html.tableRowElement Js.t) * ('a list ref)
-
-let make_group_elt header = (header, ref [])
+let make_group header = (header, ref [])
 
 let add_row_to_group (_, lst) row =
   lst := !lst @ [row]
 
-let add_group_to_results results (header, rows) =
-	dom_add ~parent:results header;
-	let i = ref 0 in
-	List.iter (fun x ->
-	  begin
-		match !i mod 2 with
-		  0 ->
-			x##className <- (Js.string ((Js.to_string x##className) ^ " tournabox-even"))
-		| _ ->
-		  x##className <- (Js.string ((Js.to_string x##className) ^ " tournabox-odd"))
-	  end;
-	  incr i;
-	  dom_add ~parent:results x
-	) !rows
 
-let render_groups tourney results groups grouping_spec (filter: or_filter) =
-  let num_rounds = num_rounds tourney in
+let process_groups num_rounds groups grouping_spec (filter: or_filter) =
+  let results = ref [] in
   let num_groups = List.length groups in
-  let do_choices groupi choices =
-	let num_choices = List.length choices in
+  let do_group groupi group =
+	let num_choices = List.length group in
 	let { Ttypes.header; should_filter_header } =
-	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
-	let header_row = Dom_html.createTr doc in
-	header_row##className <- Js.string "tournabox-header-row";
-	add_column header_row header;
-	let group_elt = make_group_elt header_row in
+	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi group in
+	let group' = (header, ref []) in
 	let has_matches = ref false in
 	let do_choice i choice =
-	  let row = Dom_html.createTr doc in
-	  row##className <- (Js.string "tournabox-row");
-	  let columns =
+	  let row =
 		grouping_spec#column_extractor num_choices i choice in
 	  let matches =
 		List.exists
@@ -364,22 +341,54 @@ let render_groups tourney results groups grouping_spec (filter: or_filter) =
 			let header_content = Ttypes.(column_content_string header.content) in
 			(should_filter_header && (or_filter_matches filter header_content)) ||
 			  (should_filter && or_filter_matches filter content))
-		  columns in
+		  row in
 	  if matches then begin
 		has_matches := true;
-		List.iter
-		  (fun column ->
-			add_column row column)
-		  columns;
-		add_row_to_group group_elt row
+		add_row_to_group group' row
 	  end
 	in
-	List.iteri do_choice choices;
+	List.iteri do_choice group;
 	if !has_matches then begin
-	  add_group_to_results results group_elt
+	  results := group' :: !results
 	end
   in
-  List.iteri do_choices groups
+  List.iteri do_group groups;
+  List.rev !results
+
+let render_groups results groups =
+  let do_group _ (header, rows) =
+	let header_row = Dom_html.createTr doc in
+	header_row##className <- Js.string "tournabox-header-row";
+	let header_column = add_td header_row header in
+		header_column##colSpan <-
+		(match !rows with hd :: _ -> List.length hd | _ -> assert false);
+	dom_add ~parent:header_row header_column;
+	dom_add ~parent:results header_row;
+	let i = ref 0 in
+	let do_row _ row =
+	  let row_elt = Dom_html.createTr doc in
+	  let add_class str =
+		  row_elt##className <- (Js.string
+								   ((Js.to_string row_elt##className)
+									^ " tournabox-" ^ str))
+	  in
+	  add_class "row";
+	  List.iter
+		(fun column ->
+		  ignore(add_td row_elt column))
+		row;
+	  begin match !i mod 2 with
+		0 ->
+		  add_class "even"
+	  | _ ->
+		  add_class "odd"
+	  end;
+	  incr i;
+	  dom_add ~parent:results row_elt;
+	in
+	List.iteri do_row !rows
+  in
+  List.iteri do_group groups
 
 type check = Dom_html.inputElement Js.t
 
@@ -418,7 +427,9 @@ let select_and_render state =
 	EGroup (check, espec) ->
 	  let groups = select_grouped espec state.tourney in
 	  Printf.printf "Selected %d groups" (List.length groups); flush_all();
-	  render_groups state.tourney state.results groups espec filter
+	  let num_rounds = num_rounds state.tourney in
+	  let groups' = process_groups num_rounds groups espec filter in
+	  render_groups state.results groups';
   | _ -> failwith "BUG: get_espec"
 
 let rec main_loop state =
