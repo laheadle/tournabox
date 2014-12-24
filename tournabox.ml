@@ -392,14 +392,24 @@ let render_groups results groups =
 
 type check = Dom_html.inputElement Js.t
 
+type grouping_spec = Entry.slot Ttypes.grouping_spec
+
 type op =
   Key
-| EGroup of check * Entry.slot Ttypes.grouping_spec
+| EGroup of check * grouping_spec
+
+module GroupCache = Map.Make(struct
+  type t = grouping_spec
+  let compare = compare
+end)
+
+type raw_group = Entry.slot C.t list list
 
 type 'node state = {
   filter: string;
   current_check_box: check;
   current_egroup: op; (* Egroup *)
+  cache: raw_group Lwt.t GroupCache.t;
   all_ops: op list;
   check_boxes: check list;
   tourney: tourney;
@@ -425,11 +435,12 @@ let select_and_render state =
   in
   match state.current_egroup with
 	EGroup (check, espec) ->
-	  let groups = select_grouped espec state.tourney in
+	  GroupCache.find espec state.cache >>=
+		fun (groups) ->
 	  Printf.printf "Selected %d groups" (List.length groups); flush_all();
 	  let num_rounds = num_rounds state.tourney in
 	  let groups' = process_groups num_rounds groups espec filter in
-	  render_groups state.results groups';
+	  Lwt.return (render_groups state.results groups');
   | _ -> failwith "BUG: get_espec"
 
 let rec main_loop state =
@@ -458,9 +469,8 @@ let rec main_loop state =
 		let value = (Js.to_string state.filter_box##value) in
 		  (* Printf.printf "%s" value; flush_all (); *)
 		{ state with filter = value } in
-	select_and_render new_state;
-	ignore (main_loop new_state);
-	Lwt.return ())
+	select_and_render new_state >>=
+	  fun () -> main_loop new_state)
 
 let chosen_specs groups_requested =
   let all = [ Round_group.o; Performance_group.o; Country_group.o; Seed_group.o  ] in
@@ -498,17 +508,16 @@ let chosen_specs groups_requested =
 
 let enter_main_loop state =
   state.filter_box##value <- (Js.string state.filter);
-  select_and_render state;
-  main_loop state
+  select_and_render state >>=
+	fun () -> main_loop state
 
 let show container groups_requested filters_requested tourney =
   let root =  Dom_html.createDiv doc in
   let results = Dom_html.createTable doc in
   results##className <- (Js.string "tournabox-results");
-  let top = Dom_html.createDiv doc in
-  let top_wrapper = Dom_html.createDiv doc in
-  let add elt = dom_add ~parent:root elt in
-  let add_top elt = dom_add ~parent:top elt in
+  let menu = Dom_html.createDiv doc in
+  let menu_wrapper = Dom_html.createDiv doc in
+  let add_menu elt = dom_add ~parent:menu elt in
   let filter_box = Dom_html.createInput doc in
   let add_group_checkbox group_spec =
 	let check_span = Dom_html.createSpan doc in
@@ -516,26 +525,29 @@ let show container groups_requested filters_requested tourney =
 	Jsutil.textNode group_spec#name |> (dom_add ~parent:check_span);
 	dom_add ~parent:check_span check_group;
 	check_span##className <- (Js.string "tournabox-menu-checkspan");
-	add_top check_span;
+	add_menu check_span;
 	(check_group, group_spec)
   in
   let filter_span = Dom_html.createSpan doc in
   let _ =
 	root##className <- (Js.string "tournabox-root");
 	dom_add ~parent:container root;
-	top_wrapper##className <- (Js.string "tournabox-menu-wrapper");
-	top##className <- (Js.string "tournabox-menu");
-	add top_wrapper;
-	dom_add ~parent:top_wrapper top;
-	add results;
+	menu_wrapper##className <- (Js.string "tournabox-menu-wrapper");
+	menu##className <- (Js.string "tournabox-menu");
+	dom_add ~parent:root menu_wrapper;
+	dom_add ~parent:menu_wrapper menu;
+	dom_add ~parent:root results;
 	dom_add ~parent:filter_span (Jsutil.textNode "Filter: ");
 	filter_span##className <- (Js.string "tournabox-filter-span");
 	filter_box##className <- (Js.string "tournabox-filter-input");
 	dom_add ~parent:filter_span filter_box;
-	dom_add ~parent:top filter_span; in
-  let add = add_group_checkbox in
-  let especs = List.map add (chosen_specs groups_requested) in
-  let emake (check, spec) = EGroup (check, spec) in
+	dom_add ~parent:menu filter_span; in
+  let especs = List.map add_group_checkbox (chosen_specs groups_requested) in
+  let cache = ref GroupCache.empty in
+  let emake (check, spec) = 
+	cache := GroupCache.add spec (Lwt_js.yield () >>= (fun () ->
+	  (Lwt.return (select_grouped spec tourney)))) !cache;
+	EGroup (check, spec) in
   let get_check (check, _) = check in
   let state = {
 	filter = filters_requested;
@@ -543,6 +555,7 @@ let show container groups_requested filters_requested tourney =
 	current_egroup = emake (Util.hd_exn especs);
 	all_ops = List.map emake especs;
 	check_boxes = List.map get_check especs;
+	cache = !cache;
 	tourney;
 	results;
 	filter_box
