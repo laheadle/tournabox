@@ -24,7 +24,7 @@ type column = {
 val column_content_string: column_fragment list -> string
 
 type header_spec = {
-  header_str: string;
+  header: column;
   should_filter_header: bool;
 }
 

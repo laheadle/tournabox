@@ -358,12 +358,12 @@ let render_groups tourney results groups grouping_spec (filter: or_filter) =
   let num_groups = List.length groups in
   let do_choices groupi choices =
 	let num_choices = List.length choices in
-	let { Ttypes.header_str; should_filter_header } =
+	let { Ttypes.header; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi choices in
-	let header = Dom_html.createTr doc in
-	header##className <- Js.string "tournabox-header-row";
-	Jsutil.addTd header header_str (Some "tournabox-header");
-	let group_elt = make_group_elt header in
+	let header_row = Dom_html.createTr doc in
+	header_row##className <- Js.string "tournabox-header-row";
+	add_column header_row header;
+	let group_elt = make_group_elt header_row in
 	let has_matches = ref false in
 	let do_choice i choice =
 	  let row = Dom_html.createTr doc in
@@ -376,7 +376,8 @@ let render_groups tourney results groups grouping_spec (filter: or_filter) =
 				 should_filter;
 				 class_name = _ } -> 
 			let content = Ttypes.column_content_string content in
-			(should_filter_header && (or_filter_matches filter header_str)) ||
+			let header_content = Ttypes.column_content_string header.content in
+			(should_filter_header && (or_filter_matches filter header_content)) ||
 			  (should_filter && or_filter_matches filter content))
 		  columns in
 	  if matches then begin

@@ -18,6 +18,7 @@ struct
   let round = "tournabox-round"
   let upset = "tournabox-upset"
   let was_upset_by = "tournabox-was-upset-by"
+  let just_country = "tournabox-just-country"
 end
 
 let entry ?(filterable=true) e =
@@ -40,6 +41,18 @@ let entry ?(filterable=true) e =
 	class_name=Some (Classes.entry ^ " " ^ class_name);
 	should_filter=filterable
   }
+
+let just_country c = {
+  content=[Text c];
+  class_name=Some (Classes.just_country);
+  should_filter=true;
+}
+
+let as_header = function
+  | { class_name=Some str} as column ->
+	{ column with class_name = Some (str ^ " tournabox-header") }
+  | { class_name=None} as column ->
+	{ column with class_name = Some ("tournabox-header") }
 
 let in_round r =  {
   content=[
@@ -113,5 +126,8 @@ let to_be_decided = {
   should_filter=false
 }
 
-
-
+let plain ~should_filter txt =  {
+  content=[Text txt];
+  class_name=None;
+  should_filter;
+}

@@ -28,7 +28,7 @@ let column_content_string fragments =
   List.fold_left (^) "" strings
 
 type header_spec = {
-  header_str: string;
+  header: column;
   should_filter_header: bool;
 }
 

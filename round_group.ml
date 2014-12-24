@@ -50,7 +50,10 @@ let o =
 				  (num_rounds - this_round)
 				  len)
 	  in
-	  { Ttypes.header_str; should_filter_header = false }
+	  { Ttypes.header =
+		  Columns.as_header
+			(Columns.plain ~should_filter:false header_str);
+		should_filter_header = false }
 	method compare_choice a b = compare a b
 	method compare_group = C.compare_length_then_first
 	method in_group choice group =

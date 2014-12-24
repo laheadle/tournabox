@@ -43,13 +43,32 @@
 
 			.tournabox-header-row {
 				.tournabox-header {
-					padding: 4px;
+					padding: 8px;
 					font-size: 1.2em
 				}
 			}
 
 			.tournabox-odd {
 				background-color: lighten(color(gray), 42%);
+			}
+
+			.tournabox-country {
+				margin-left: 4px;
+				color: purple;
+				font-size: .8em;
+			}
+
+			.tournabox-seeded {
+				.tournabox-name {
+					color: darken(color(blue), 20%);
+				}
+				.tournabox-seed {
+					font-weight: bold;
+					&:before { content: ' ['; }
+					&:after { content: ']'; }
+					vertical-align: super;
+					font-size: .8em;
+				}
 			}
 
 			.tournabox-row {
@@ -90,24 +109,6 @@
 					}
 				}
 
-				.tournabox-country {
-					margin-left: 4px;
-					color: purple;
-					font-size: .8em;
-				}
-
-				.tournabox-seeded {
-					.tournabox-name {
-						color: darken(color(blue), 20%);
-					}
-					.tournabox-seed {
-						font-weight: bold;
-						&:before { content: ' ['; }
-						&:after { content: ']'; }
-						vertical-align: super;
-						font-size: .8em;
-					}
-				}
 			}
 		}
 	}	

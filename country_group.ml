@@ -3,7 +3,7 @@ module C = Choice
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let o = let open Entry in object
   method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	{ Ttypes.header_str = C.extract_first_first lst
+	let header =  C.extract_first_first lst
 		(fun p ->
 		  let p = fetch p in
 		  match p.country with None -> assert false
@@ -12,8 +12,9 @@ let o = let open Entry in object
 			try
 			  let country = List.assoc c Countries.codes in
 			  country
-			with _ -> c
-		);
+			with _ -> c)
+	in
+	{ Ttypes.header = Columns.(as_header (just_country header));
 	  should_filter_header = true; }
   method name = "By Country";
   method compare_choice c1 c2 =

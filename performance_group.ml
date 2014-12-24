@@ -5,9 +5,9 @@ let o =
   (object
 	method name = "By Performance"
 	method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	  let header_str = C.extract_first_first lst
-		(fun e -> let e = fetch e in Entry.to_string e) in
-	  { Ttypes.header_str; should_filter_header=true }
+	  let header = C.extract_first_first lst fetch in
+	  { Ttypes.header = Columns.(as_header (entry header));
+		should_filter_header=true }
 	method compare_choice c1 c2 = -(compare c1 c2)
 	method compare_group =
 	  fun g1 g2 -> -(C.compare_length_then_first g1 g2)

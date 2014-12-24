@@ -3,8 +3,8 @@ module C = Choice
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let o = let open Entry in object
   method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	{ Ttypes.header_str =
-		C.extract_first_first lst (function | Somebody e -> to_string e | Bye -> assert false);
+	let header = C.extract_first_first lst fetch in
+	{ Ttypes.header = Columns.(as_header (entry header));
 	  should_filter_header = true; }
   method name = "By Seed";
   method compare_choice c1 c2 = -(compare c1.C.round c2.C.round)
