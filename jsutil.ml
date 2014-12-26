@@ -28,3 +28,19 @@ let getAttribute_exn node attr =
   let opt = node##getAttribute (Js.string attr) in
   let jopt = Js.Opt.get opt (fun _ -> raise Not_found) in
   Js.to_string jopt
+
+exception Not_text
+exception No_children
+
+let first_child node =
+  Js.Opt.get (node##childNodes##item(0)) (fun () -> raise No_children)
+
+let text_child node =
+  let child = first_child node in
+  let opt = Dom.CoerceTo.text child in
+  Js.Opt.get opt (fun () -> raise Not_text) 
+
+let text_of elt =
+  Js.to_string (text_child elt)##data
+
+

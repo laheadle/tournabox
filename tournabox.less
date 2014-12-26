@@ -8,7 +8,7 @@
 		display: inline-block;
 		color: black;
 		@media (min-width:768px) {
-			min-width: 730px;
+			min-width: 750px;
 		}
 		font-family: Arial, Sans Serif;
 
@@ -38,7 +38,14 @@
 			overflow: auto;
 			padding: 4px;
 			@media (min-width:768px) {
-				min-width: 728px;
+				min-width: 748px;
+			}
+
+			.tournabox-name {
+				cursor: pointer;
+				&:hover {
+					background-color: lighten(color(red), 44%);
+				}
 			}
 
 			.tournabox-header-row {

@@ -34,7 +34,7 @@ let log_2 len =
 	
 let num_rounds tourney =
   let len = Array.length tourney.rounds.(0) in
-  Printf.printf "%d rounds\n" (log_2 len + 1);
+  (* Printf.printf "%d rounds\n" (log_2 len + 1); *)
   log_2 len + 1
 
 let entries tourney = tourney.entries
@@ -126,7 +126,7 @@ let rec won tourney index =
 	else
 	  tourney
   in
-  Printf.printf "won %d %d\n" index (playing tourney index); flush_all();
+  (* Printf.printf "won %d %d\n" index (playing tourney index); flush_all(); *)
   impl index (playing tourney index)
 
 
@@ -135,7 +135,7 @@ let rec won tourney index =
 let init entries_list =
   let open Entry in
   let len = List.length entries_list in
-  Printf.printf "#entries: %d\n" len;
+  (* Printf.printf "#entries: %d\n" len; *)
   let num_rounds = log_2 len in
   let empty_ichoice ~(round: int) = {
 	C.entry_pair=(None,None);
@@ -176,7 +176,7 @@ let init entries_list =
   let first =  rounds.(0) in
   init_first first;
   let rec perform_byes tourney round_index choice_index =
-	Printf.printf "byes %d %d" round_index choice_index; flush_all ();
+	(* Printf.printf "byes %d %d" round_index choice_index; flush_all (); *)
 	let do_round round =
 	  if choice_index < Array.length round then
 		let tourney =
@@ -245,7 +245,7 @@ let select_grouped group_spec tourney =
   let add_choice = function
 	| { C.entry_pair = (Some k, _) } as ichoice ->
 	  if not (is_bye tourney k) then begin
-		(Printf.printf "Add %d" k); flush_all();
+		(* (Printf.printf "Add %d" k); flush_all(); *)
 		choices :=
 		  add_choice_iter
 		  (convert ichoice)
@@ -396,7 +396,9 @@ type grouping_spec = Entry.slot Ttypes.grouping_spec
 
 type op =
   Key
+| No_Op
 | EGroup of check * grouping_spec
+| Name_Click of Dom_html.element Js.t
 
 module GroupCache = Map.Make(struct
   type t = grouping_spec
@@ -417,6 +419,19 @@ type 'node state = {
   filter_box: Dom_html.inputElement Js.t
 }
 
+let all_filters =
+  let quoted = Regexp.regexp "^\"(.*)\"$" in
+  fun filter ->
+	match Regexp.search quoted filter 0 with
+	  Some (_, matched) -> begin
+		match Regexp.matched_group matched 1 with
+		  None -> [""]
+		| Some str -> [str]
+	  end
+	| None ->
+	  let commas = Regexp.regexp "\\s*,\\s*" in
+	  Regexp.split commas filter
+
 let select_and_render state =
   delete_children state.results;
   let positive = state.current_check_box in
@@ -424,12 +439,11 @@ let select_and_render state =
   List.iter (fun negative -> negative##checked <- Js._false)
 	(List.filter (fun check -> check <> positive ) state.check_boxes);
   let filter =
-	let commas = Regexp.regexp "\\s*,\\s*" in
-	let all_filter_strs = Regexp.split commas state.filter in
+	let all_filter_strs = all_filters state.filter in
 	let make_func filter = fun str ->
 	  let result = Util.contains
 		(String.lowercase str) (String.lowercase filter) in
-		(*Printf.printf "%b: %s" result str; flush_all (); *)
+		(* Printf.printf "%b: '%s' = '%s'" result filter str; flush_all (); *)
 	  result in
 	List.map make_func all_filter_strs
   in
@@ -437,38 +451,66 @@ let select_and_render state =
 	EGroup (check, espec) ->
 	  GroupCache.find espec state.cache >>=
 		fun (groups) ->
-	  Printf.printf "Selected %d groups" (List.length groups); flush_all();
+	  (* Printf.printf "Selected %d groups" (List.length groups); flush_all(); *)
 	  let num_rounds = num_rounds state.tourney in
 	  let groups' = process_groups num_rounds groups espec filter in
 	  Lwt.return (render_groups state.results groups');
   | _ -> failwith "BUG: get_espec"
 
+let literal_filter str = "\"" ^ str ^ "\""
+
 let rec main_loop state =
-  let key input =
-	Lwt.bind
-	  (Lwt_js_events.keyup input)
-	  (fun event -> Lwt.return Key) in
-  let clicks = function
-	| EGroup (positive, _) as g ->
+  let input_threads =
+	let key input =
 	  Lwt.bind
-		(Lwt_js_events.click positive)
-		(fun _ -> Lwt.return g)
-	| _ -> failwith "BUG: bad clicks"
-  in
+		(Lwt_js_events.keyup input)
+		(fun event -> Lwt.return Key) in
+	let clicks = function
+	  | EGroup (positive, _) as g ->
+		Lwt.bind
+		  (Lwt_js_events.click positive)
+		  (fun _ -> Lwt.return g)
+	  | _ -> failwith "BUG: bad clicks" in
+	let name_clicks =
+	  (Lwt_js_events.click doc) >>=
+		(fun event -> Lwt.return
+		  (try
+			 (Name_Click (Js.Opt.get
+							(event##target)
+							(fun () -> raise Not_found)))
+		   with Not_found -> No_Op))
+	in
 	(* Js.debugger (); *)
-  let threads =
 	let clicks = (List.map clicks state.all_ops) in
-	(key state.filter_box) :: clicks in
-  Lwt.pick threads >>= (fun new_op ->
+	name_clicks :: (key state.filter_box) :: clicks
+  in
+  Lwt.pick input_threads >>= (fun new_op ->
 	let new_state =
 	  match new_op with
 		EGroup (check_box, _) ->
+		  state.filter_box##value <- (Js.string "" );
           { state with current_check_box = check_box;
+			filter = "";
             current_egroup = new_op }
 	  | Key ->
 		let value = (Js.to_string state.filter_box##value) in
 		  (* Printf.printf "%s" value; flush_all (); *)
-		{ state with filter = value } in
+		{ state with filter = value }
+	  | Name_Click target ->
+		begin
+		  try
+			if Js.to_bool (target##classList##contains
+							 (Js.string "tournabox-name")) then
+			  let literal = literal_filter (Jsutil.text_of target) in
+			  state.filter_box##value <- (Js.string literal );
+			  { state with filter = literal }
+			else
+			  state
+		  with
+			Jsutil.Not_text -> state
+		end
+	  | No_Op -> state
+	in
 	select_and_render new_state >>=
 	  fun () -> main_loop new_state)
 
@@ -598,25 +640,17 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
   let current_state = List.fold_left won_str tourney outcomes in
 	(* let now2 = jsnew Js.date_now () in 
 	   Printf.printf "%d secs to win" now2#getMilliseconds; *)
-  Printf.printf "showing"; flush_all ();
+  (* Printf.printf "showing"; flush_all (); *)
   show container groups_requested filters_requested current_state
 
-exception Not_text
-
 let get_all_tourney_specs () =
-  let first_child node =
-	Js.Opt.get (node##childNodes##item(0)) (fun () -> raise Not_found) in
-  let text_child node =
-	let child = first_child node in
-	let opt = Dom.CoerceTo.text child in
-	Js.Opt.get opt (fun () -> raise Not_text)  in
   let text_of node_id =
 	let node = Jsutil.getElementById_exn node_id in
 	try
-	  Js.to_string (text_child node)##data
+	  Jsutil.text_of node
 	with
-	  Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_id)
-	| Not_found -> ""
+	  Jsutil.Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_id)
+	| Jsutil.No_children -> ""
   in
   let get_spec container =
 	let space_comma_space = Regexp.regexp "\\s*,\\s*" in
