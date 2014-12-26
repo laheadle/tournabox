@@ -407,7 +407,7 @@ end)
 
 type raw_group = Entry.slot C.t list list
 
-type 'node state = {
+type ('results, 'root) state = {
   filter: string;
   current_check_box: check;
   current_egroup: op; (* Egroup *)
@@ -415,7 +415,8 @@ type 'node state = {
   all_ops: op list;
   check_boxes: check list;
   tourney: tourney;
-  results: 'node;
+  root: 'root;
+  results: 'results;
   filter_box: Dom_html.inputElement Js.t
 }
 
@@ -503,6 +504,7 @@ let rec main_loop state =
 							 (Js.string "tournabox-name")) then
 			  let literal = literal_filter (Jsutil.text_of target) in
 			  state.filter_box##value <- (Js.string literal );
+			  state.root##scrollIntoView (Js._true);
 			  { state with filter = literal }
 			else
 			  state
@@ -600,6 +602,7 @@ let show container groups_requested filters_requested tourney =
 	cache = !cache;
 	tourney;
 	results;
+	root;
 	filter_box
   } in
   ignore(enter_main_loop state)
