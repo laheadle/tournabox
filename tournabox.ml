@@ -472,7 +472,7 @@ let rec main_loop state =
 		  (fun _ -> Lwt.return g)
 	  | _ -> failwith "BUG: bad clicks" in
 	let name_clicks =
-	  (Lwt_js_events.click doc) >>=
+	  (Lwt_js_events.click state.results) >>=
 		(fun event -> Lwt.return
 		  (try
 			 (Name_Click (Js.Opt.get
