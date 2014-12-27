@@ -43,4 +43,14 @@ let text_child node =
 let text_of elt =
   Js.to_string (text_child elt)##data
 
+let offset_of elt =
+  let rec iter acc elt =
+	(* Printf.printf "acc %d\n" acc; flush_all (); *)
+	Js.Opt.case (elt##offsetParent)
+	  (fun () -> acc)
+	  (fun parent ->
+		iter (acc + (parent##offsetTop)) parent)
+  in
+  iter (elt##offsetTop) elt
 
+					   

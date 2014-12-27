@@ -12,10 +12,11 @@ js:
 dev: js
 	cp ./tournabox.css ./tournabox.js ./tst.html ~/Downloads/
 
-test: js
-	ocamlbuild $(DEBUG_FLAGS) test_dom_methods.byte
-	js_of_ocaml $(JSO_DEBUG_FLAGS) test_dom_methods.byte
-	cp ./test_dom_methods.js ./tst_dom_methods.html ~/Downloads/
+# make test CASE=scrolling
+test:
+	ocamlbuild $(DEBUG_FLAGS) tests/test_$(CASE).byte
+	js_of_ocaml $(JSO_DEBUG_FLAGS) test_$(CASE).byte
+	cp test_$(CASE).js tests/test_$(CASE).html ~/Downloads/
 
 
 js_maps:

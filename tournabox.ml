@@ -505,6 +505,8 @@ let rec main_loop state =
 			  let literal = literal_filter (Jsutil.text_of target) in
 			  state.filter_box##value <- (Js.string literal );
 			  state.root##scrollIntoView (Js._true);
+			  let y = Jsutil.offset_of state.root in
+			  Dom_html.window##scroll (0, y-100);
 			  { state with filter = literal }
 			else
 			  state
