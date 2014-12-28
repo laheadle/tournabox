@@ -8,7 +8,6 @@ let o = let open Entry in object
 		  let p = fetch p in
 		  match p.country with None -> assert false
 		  | Some c ->
-		  (* Printf.printf "%s -" c; flush_all(); *)
 			try
 			  let country = List.assoc c Countries.codes in
 			  country

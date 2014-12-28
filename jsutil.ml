@@ -45,7 +45,6 @@ let text_of elt =
 
 let offset_of elt =
   let rec iter acc elt =
-	(* Printf.printf "acc %d\n" acc; flush_all (); *)
 	Js.Opt.case (elt##offsetParent)
 	  (fun () -> acc)
 	  (fun parent ->

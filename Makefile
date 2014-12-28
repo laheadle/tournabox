@@ -1,12 +1,12 @@
 
 FLAGS :=  -cflag -annot -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
 DEBUG_FLAGS :=  -lflag -g -cflag -annot -cflag -g -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
-
+JSO_FLAGS := +weak.js
 JSO_DEBUG_FLAGS := +weak.js --enable excwrap --debuginfo --pretty --noinline
 
 js:
 	ocamlbuild $(FLAGS) tournabox.byte
-	js_of_ocaml tournabox.byte
+	js_of_ocaml $(JSO_FLAGS) tournabox.byte
 	lessc tournabox.less tournabox.css
 
 dev: js

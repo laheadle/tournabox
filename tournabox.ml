@@ -2,7 +2,6 @@ module C = Choice
 
 let report_error str = Dom_html.window##alert (Js.string str)
 
-
 type round =  int Choice.t array
 type tourney = { rounds: round array;
 				 num_slots: int;
@@ -34,7 +33,6 @@ let log_2 len =
 	
 let num_rounds tourney =
   let len = Array.length tourney.rounds.(0) in
-  (* Printf.printf "%d rounds\n" (log_2 len + 1); *)
   log_2 len + 1
 
 let entries tourney = tourney.entries
@@ -126,7 +124,7 @@ let rec won tourney index =
 	else
 	  tourney
   in
-  (* Printf.printf "won %d %d\n" index (playing tourney index); flush_all(); *)
+  Tlog.debugf ~section:Tlog.playing "won %d %d\n" index (playing tourney index);
   impl index (playing tourney index)
 
 
@@ -135,8 +133,8 @@ let rec won tourney index =
 let init entries_list =
   let open Entry in
   let len = List.length entries_list in
-  (* Printf.printf "#entries: %d\n" len; *)
   let num_rounds = log_2 len in
+  Tlog.noticef ~section:Tlog.input "%d rounds\n" num_rounds;
   let empty_ichoice ~(round: int) = {
 	C.entry_pair=(None,None);
 	winner=None;
@@ -176,7 +174,7 @@ let init entries_list =
   let first =  rounds.(0) in
   init_first first;
   let rec perform_byes tourney round_index choice_index =
-	(* Printf.printf "byes %d %d" round_index choice_index; flush_all (); *)
+	Tlog.debugf ~section:Tlog.playing "byes round %d choice %d" round_index choice_index;
 	let do_round round =
 	  if choice_index < Array.length round then
 		let tourney =
@@ -245,7 +243,7 @@ let select_grouped group_spec tourney =
   let add_choice = function
 	| { C.entry_pair = (Some k, _) } as ichoice ->
 	  if not (is_bye tourney k) then begin
-		(* (Printf.printf "Add %d" k); flush_all(); *)
+		Tlog.debugf ~section:Tlog.playing "Add %d" k;
 		choices :=
 		  add_choice_iter
 		  (convert ichoice)
@@ -444,7 +442,7 @@ let select_and_render state =
 	let make_func filter = fun str ->
 	  let result = Util.contains
 		(String.lowercase str) (String.lowercase filter) in
-		(* Printf.printf "%b: '%s' = '%s'" result filter str; flush_all (); *)
+	  Tlog.debugf ~section:Tlog.filter "%b: '%s' contains '%s'" result str filter;
 	  result in
 	List.map make_func all_filter_strs
   in
@@ -452,7 +450,7 @@ let select_and_render state =
 	EGroup (check, espec) ->
 	  GroupCache.find espec state.cache >>=
 		fun (groups) ->
-	  (* Printf.printf "Selected %d groups" (List.length groups); flush_all(); *)
+	  Tlog.noticef ~section:Tlog.grouping "Cache found %d groups" (List.length groups);
 	  let num_rounds = num_rounds state.tourney in
 	  let groups' = process_groups num_rounds groups espec filter in
 	  Lwt.return (render_groups state.results groups');
@@ -495,7 +493,7 @@ let rec main_loop state =
             current_egroup = new_op }
 	  | Key ->
 		let value = (Js.to_string state.filter_box##value) in
-		  (* Printf.printf "%s" value; flush_all (); *)
+		  Tlog.noticef ~section:Tlog.filter "in box: %s" value;
 		{ state with filter = value }
 	  | Name_Click target ->
 		begin
@@ -619,7 +617,7 @@ type 'node tourney_spec = {
 
 let play { entries; outcomes; groups_requested; filters_requested; container } =
   let cleanup_strings () =
-  (* Printf.printf "%s" outcomes; flush_all (); *)
+	Tlog.infof ~section:Tlog.input "%s" outcomes;
 	let newline = Regexp.regexp "\n|\\(\r\n\\)" in
 	let not_only_spaces str = 
 	  let all_spaces = Regexp.regexp "^\\s*$" in
@@ -629,7 +627,7 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
 	let outcomes = List.filter not_only_spaces (Regexp.split newline outcomes) in
 	let entries = List.map Util.strip_spaces entries in
 	let outcomes  = List.map Util.strip_spaces outcomes in
-  (* Printf.printf "%d en %d ou" (List.length entries) (List.length outcomes) ; flush_all(); *)
+	Tlog.noticef ~section:Tlog.input "%d entries %d outcomes" (List.length entries) (List.length outcomes);
 	let entry_of_string =
 	  let expect_country =
 		List.exists
@@ -645,7 +643,6 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
   let current_state = List.fold_left won_str tourney outcomes in
 	(* let now2 = jsnew Js.date_now () in 
 	   Printf.printf "%d secs to win" now2#getMilliseconds; *)
-  (* Printf.printf "showing"; flush_all (); *)
   show container groups_requested filters_requested current_state
 
 let get_all_tourney_specs () =
@@ -694,7 +691,7 @@ let get_all_tourney_specs () =
   let containers = doc##body##querySelectorAll (Js.string ".tournabox-container") in
   let lst = Dom.list_of_nodeList containers in
   let specs = List.map get_spec lst in
-	(* Printf.printf "%d found" (List.length mapped); flush_all(); *)
+  Tlog.noticef ~section:Tlog.input "%d tournament specs found" (List.length specs);
   specs
 ;;
 
