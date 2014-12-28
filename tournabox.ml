@@ -563,6 +563,7 @@ let show container groups_requested filters_requested tourney =
   let menu_wrapper = Dom_html.createDiv doc in
   let add_menu elt = dom_add ~parent:menu elt in
   let filter_box = Dom_html.createInput doc in
+  let filter_span = Dom_html.createSpan doc in
   let add_group_checkbox group_spec =
 	let check_span = Dom_html.createSpan doc in
 	let check_group = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
@@ -572,20 +573,34 @@ let show container groups_requested filters_requested tourney =
 	add_menu check_span;
 	(check_group, group_spec)
   in
-  let filter_span = Dom_html.createSpan doc in
-  let _ =
-	root##className <- (Js.string "tournabox-root");
-	dom_add ~parent:container root;
+  let add_brand () =
+	let brand_div = Dom_html.createDiv doc in
+	brand_div##className <- (Js.string "tournabox-brand");
+	let brand_link = Dom_html.createA doc in
+	brand_link##setAttribute (Js.string "href",
+							  Js.string "http://laheadle.github.io/docs-tournabox");
+	dom_add ~parent:brand_link (Jsutil.textNode "Tournabox");
+	dom_add ~parent:brand_div brand_link;
+	dom_add ~parent:root brand_div
+  in
+  let add_menu () =
 	menu_wrapper##className <- (Js.string "tournabox-menu-wrapper");
 	menu##className <- (Js.string "tournabox-menu");
-	dom_add ~parent:root menu_wrapper;
-	dom_add ~parent:menu_wrapper menu;
-	dom_add ~parent:root results;
-	dom_add ~parent:filter_span (Jsutil.textNode "Filter: ");
 	filter_span##className <- (Js.string "tournabox-filter-span");
 	filter_box##className <- (Js.string "tournabox-filter-input");
 	dom_add ~parent:filter_span filter_box;
-	dom_add ~parent:menu filter_span; in
+	dom_add ~parent:menu filter_span;
+	dom_add ~parent:root menu_wrapper;
+	dom_add ~parent:menu_wrapper menu;
+  in
+  let () =
+	dom_add ~parent:filter_span (Jsutil.textNode "Filter: ");
+	root##className <- (Js.string "tournabox-root");
+	dom_add ~parent:container root;
+	add_menu ();
+	dom_add ~parent:root results;
+	add_brand();
+  in
   let especs = List.map add_group_checkbox (chosen_specs groups_requested) in
   let cache = ref GroupCache.empty in
   let emake (check, spec) = 
@@ -607,7 +622,8 @@ let show container groups_requested filters_requested tourney =
   } in
   ignore(enter_main_loop state)
 
-type 'node tourney_spec = {
+(* A container node and the configuration of a tournabox *)
+type 'node tourney_shell = {
   entries: string;
   outcomes:  string;
   groups_requested: string list;
@@ -645,7 +661,7 @@ let play { entries; outcomes; groups_requested; filters_requested; container } =
 	   Printf.printf "%d secs to win" now2#getMilliseconds; *)
   show container groups_requested filters_requested current_state
 
-let get_all_tourney_specs () =
+let get_all_tourney_shells () =
   let text_of node_id =
 	let node = Jsutil.getElementById_exn node_id in
 	try
@@ -654,7 +670,7 @@ let get_all_tourney_specs () =
 	  Jsutil.Not_text -> failwith (Printf.sprintf "The element '#%s' must contain only text" node_id)
 	| Jsutil.No_children -> ""
   in
-  let get_spec container =
+  let get_shell container =
 	let space_comma_space = Regexp.regexp "\\s*,\\s*" in
 	let groups_requested_str =
 	  try
@@ -684,26 +700,26 @@ let get_all_tourney_specs () =
 		""
 	in
 	{ entries; outcomes; groups_requested; filters_requested; container } in
-  let get_spec container =
+  let get_shell container =
 	try
-	  Some (get_spec container)
+	  Some (get_shell container)
 	with (Failure str) -> report_error str; None in
   let containers = doc##body##querySelectorAll (Js.string ".tournabox-container") in
-  let lst = Dom.list_of_nodeList containers in
-  let specs = List.map get_spec lst in
-  Tlog.noticef ~section:Tlog.input "%d tournament specs found" (List.length specs);
-  specs
+  let containers = Dom.list_of_nodeList containers in
+  let shells = List.map get_shell containers in
+  Tlog.noticef ~section:Tlog.input "%d tournament shells found" (List.length shells);
+  shells
 ;;
 
 let unwrap_option = function Some x -> x | None -> assert false in
 let somes = function None -> false | Some _ -> true in
 let all = Util.filter_then_map
   ~mapf:unwrap_option ~filterf:somes
-  (get_all_tourney_specs ()) in
+  (get_all_tourney_shells ()) in
 List.iter
-  (fun spec ->
+  (fun shell ->
 	try
-	  play spec
+	  play shell
 	with Failure str -> report_error str)
 (*	| exn ->  ignore(Lwt_log_js.log ~exn ~level:Lwt_log_js.Error "error"); flush_all ()) 
 	  Printf.printf "%s" (Printexc.get_backtrace ()); flush_all ())*)

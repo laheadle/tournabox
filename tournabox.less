@@ -1,8 +1,9 @@
 /* -*- mode: css -*- */
 
+@menu-color: #D5EBED;
+
 .tournabox-container {
 	.tournabox-root {
-		padding-bottom: 5px;
 		border: 1px solid green;
 		font-size: 16px;
 		display: inline-block;
@@ -12,8 +13,22 @@
 		}
 		font-family: Arial, Sans Serif;
 
+		.tournabox-brand {
+			text-align: right;
+			padding: 6px;
+			background-color: @menu-color;
+			a {
+				color: blue;
+				padding-right: 10px;
+				text-decoration: none;
+				&:hover {
+					text-decoration: underline;
+				}
+			}
+		}
+
 		.tournabox-menu {
-			background-color: #D5EBED;
+			background-color: @menu-color;
 			position: relative;
 			padding: 6px;
 			.tournabox-filter-span { 
