@@ -214,6 +214,7 @@ let all_filters =
 	  Regexp.split commas filter
 
 let select_and_render state =
+  state.results##style##display <- (Js.string "none");
   delete_children state.results;
   let positive = state.current_check_box in
   positive##checked <- Js._true;
@@ -235,7 +236,10 @@ let select_and_render state =
 	  Tlog.noticef ~section:Tlog.grouping "Cache found %d groups" (List.length groups);
 	  let num_rounds = T.num_rounds state.tourney in
 	  let groups' = process_groups num_rounds groups espec filter in
-	  Lwt.return (render_groups state.results groups');
+	  Lwt.return (
+		render_groups state.results groups';
+		state.results##style##display <- (Js.string "block")
+	  );
   | _ -> failwith "BUG: get_espec"
 
 let literal_filter str = "\"" ^ str ^ "\""
