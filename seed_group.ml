@@ -12,16 +12,12 @@ let o = let open Entry in object
 	(match g1, g2 with
 	  ({ C.entry_pair = Some (Somebody a), _ ; _ } :: _,
 	   { C.entry_pair = Some (Somebody b), _ ; _ } :: _) ->
-		( match (a.seed, b.seed) with
-		  None, None ->
-			let cmp =
-			  compare (List.length g2) (List.length g1) in
-			if cmp = 0 then
-			  compare (to_string a) (to_string  b)
-			else cmp
-		| Some v, None -> -1
-		| None, Some v -> 1
-		| Some v, Some v2 -> compare v v2)
+		compare_seeds a b ~if_none:(fun () ->
+		  let cmp =
+			compare (List.length g2) (List.length g1) in
+		  if cmp = 0 then
+			compare (to_string a) (to_string  b)
+		  else cmp)
 	| _ -> failwith "bad group compare")
   method in_group choice group = {
 	Ttypes.quit = false;

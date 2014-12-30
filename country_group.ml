@@ -17,9 +17,12 @@ let o = let open Entry in object
 	  should_filter_header = true; }
   method name = "By Country";
   method compare_choice c1 c2 =
+	let entry choice =
+	  choice |> C.first |> fetch in
 	let player choice =
 	  choice |> C.first |> fetch |> (fun c -> c.player) in
-	compare (player c1) (player c2) 
+	compare_seeds (entry c1) (entry c2) (fun () ->
+	  compare (player c1) (player c2) )
 
   method compare_group =  fun g1 g2 -> -(C.compare_length_then_first g1 g2)
   method in_group choice group = {

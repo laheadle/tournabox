@@ -70,3 +70,11 @@ let is_bye = function
 let is_t = function
   | Bye -> false
   | Somebody _ -> true
+
+
+let compare_seeds a b ~if_none =
+  match (a.seed, b.seed) with
+	None, None -> if_none ()
+  | Some v, None -> -1
+  | None, Some v -> 1
+  | Some v, Some v2 -> compare v v2

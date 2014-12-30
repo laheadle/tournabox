@@ -11,6 +11,7 @@ val fetch: slot -> t
 val is_bye: slot -> bool
 val is_t: slot -> bool
 
+val compare_seeds: t -> t -> if_none:(unit -> int) -> int
 
 
 
