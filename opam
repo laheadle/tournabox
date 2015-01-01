@@ -1,0 +1,21 @@
+opam-version: "1.2"
+name: "tournabox"
+version: "1.0"
+maintainer: "Lyn Headley <laheadle@gmail.com>"
+authors: "Lyn Headley <laheadle@gmail.com>"
+license: "MIT"
+build: [
+  [make]
+]
+install: [make "install"]
+remove: ["make" "uninstall"]
+depends: [
+		 "ocamlfind" {build}
+		 "js_of_ocaml"
+]
+dev-repo: "https://github.com/laheadle/github.git"
+bug-reports: "https://github.com/laheadle/issues/"
+available: [ocaml-version >= "4.02.0"]
+doc: "https://laheadle/github.io/docs-tournabox/manual/index.html"
+homepage: "https://laheadle/github.io/docs-tournabox/"
+tags: [ "tournament" "web" "frontend" "game" "sports" "javascript" "html" "css" ]

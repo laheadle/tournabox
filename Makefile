@@ -9,8 +9,22 @@ js:
 	js_of_ocaml $(JSO_FLAGS) tournabox.byte
 	lessc tournabox.less tournabox.css
 
-dev: js
-	cp ./tournabox.css ./tournabox.js ./tst.html ~/Downloads/
+dev: checkTestDir uninstall install
+	cp `ocamlfind query tournabox`/tournabox.css $(TOURNABOX_TESTDIR)
+	cp `ocamlfind query tournabox`/tournabox.js $(TOURNABOX_TESTDIR)
+	cp ./tst.html $(TOURNABOX_TESTDIR)
+
+install: js
+	ocamlfind install tournabox META tournabox.js tournabox.css
+
+uninstall:
+	ocamlfind remove tournabox
+
+checkTestDir:
+ifeq ($(TOURNABOX_TESTDIR),)
+	echo "please set the env variable TOURNABOX_TESTDIR to the directory into which your test page should be copied"
+	exit 1
+endif
 
 # make test CASE=scrolling
 test:

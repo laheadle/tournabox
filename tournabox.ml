@@ -360,7 +360,7 @@ let show container groups_requested filters_requested tourney =
 	brand_div##className <- (Js.string "tournabox-brand");
 	let brand_link = Dom_html.createA doc in
 	brand_link##setAttribute (Js.string "href",
-							  Js.string "http://laheadle.github.io/docs-tournabox");
+							  Js.string "http://laheadle.github.io/docs-tournabox/stable");
 	dom_add ~parent:brand_link (Jsutil.textNode "Tournabox");
 	dom_add ~parent:brand_div brand_link;
 	dom_add ~parent:root brand_div
