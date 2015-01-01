@@ -498,14 +498,25 @@ let get_all_tourney_shells () =
 
 let unwrap_option = function Some x -> x | None -> assert false in
 let somes = function None -> false | Some _ -> true in
-let all = Util.filter_then_map
-  ~mapf:unwrap_option ~filterf:somes
-  (get_all_tourney_shells ()) in
-List.iter
-  (fun shell ->
-	try
-	  play shell
-	with Failure str -> report_error str)
-(*	| exn ->  ignore(Lwt_log_js.log ~exn ~level:Lwt_log_js.Error "error"); flush_all ()) 
+let run _ = 
+  let all = Util.filter_then_map
+      ~mapf:unwrap_option ~filterf:somes
+      (get_all_tourney_shells ()) in
+  List.iter
+    (fun shell ->
+	   try
+	     play shell
+	   with Failure str -> report_error str)
+    (*	| exn ->  ignore(Lwt_log_js.log ~exn ~level:Lwt_log_js.Error "error"); flush_all ()) 
 	  Printf.printf "%s" (Printexc.get_backtrace ()); flush_all ())*)
-  all
+    all;
+  Js._true;
+in
+
+ignore(
+  Dom_html.addEventListener
+    (doc##body)
+    Dom_html.Event.load
+    (Dom_html.handler run)
+    Js._true)
+
