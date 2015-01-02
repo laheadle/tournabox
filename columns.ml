@@ -19,6 +19,7 @@ struct
   let upset = "tournabox-upset"
   let was_upset_by = "tournabox-was-upset-by"
   let just_country = "tournabox-just-country"
+  let with_a_bye = "tournabox-with-a-bye"
 end
 
 let entry ?(filterable=true) e =
@@ -75,7 +76,7 @@ let advanced = {
 
 let with_a_bye = {
   content=[Text "with a bye"];
-  class_name=Some Classes.text;
+  class_name=Some Classes.with_a_bye;
   should_filter=false
 }
 

@@ -1,24 +1,26 @@
 /* -*- mode: css -*- */
 
-@menu-color: #D5EBED;
+@color-a: #D5EBED; // Menu and Brand Boxes
+@color-b: blue; // Brand link, seeded name, will face
+@color-c: red; // Was Defeated, was upset, name hover (lightened)
+@color-d: green; // root border, defeated, upset
+@color-e: purple; // country
+@color-f: black; // root color, advanced, to be decided, with a bye
 
 .tournabox-container {
 	.tournabox-root {
-		border: 1px solid green;
+		border: 1px solid @color-d;
 		font-size: 16px;
 		display: inline-block;
-		color: black;
-		@media (min-width:768px) {
-			min-width: 750px;
-		}
+		color: @color-f;
 		font-family: Arial, Sans Serif;
 
 		.tournabox-brand {
 			text-align: right;
 			padding: 6px;
-			background-color: @menu-color;
+			background-color: @color-a;
 			a {
-				color: blue;
+				color: @color-b;
 				padding-right: 10px;
 				text-decoration: none;
 				font-style: italic;
@@ -29,13 +31,10 @@
 		}
 
 		.tournabox-menu {
-			background-color: @menu-color;
-			position: relative;
-			padding: 6px;
-			.tournabox-filter-span { 
-				position: absolute;
-				right: 0;
-				top: 6px;
+			background-color: @color-a;
+			span {
+				display: inline-block;
+				padding: 6px;
 			} 
 			input[type="checkbox"] {
 				margin: 0 20px 0 4px;
@@ -49,23 +48,22 @@
 		}
 
 		.tournabox-results {
-			border-collapse: collaps;
+			@media (max-width:400px) {
+				table-layout: fixed;
+				width: 100%;
+			}
 			border-spacing: 0px;
 			overflow: auto;
 			padding: 4px;
-			@media (min-width:768px) {
-				min-width: 748px;
-			}
 
 			.tournabox-name {
 				cursor: pointer;
 				&:hover {
-					background-color: lighten(color(red), 44%);
+					background-color: lighten(color(@color-c), 44%);
 				}
 			}
 
 			.tournabox-header-row {
-				// background-color: lighten(color(red), 44%);
 				.tournabox-header {
 					padding: 8px;
 					font-size: 1.2em;
@@ -82,13 +80,13 @@
 
 			.tournabox-country {
 				margin-left: 4px;
-				color: purple;
+				color: @color-e;
 				font-size: .8em;
 			}
 
 			.tournabox-seeded {
 				.tournabox-name {
-					color: darken(color(blue), 20%);
+					color: darken(color(@color-b), 20%);
 				}
 				.tournabox-seed {
 					font-weight: bold;
@@ -105,6 +103,8 @@
 
 				td {
  					padding: 2px 4px 2px 4px;
+					text-overflow: ellipsis;
+					overflow: hidden;
 				}
 
 				td:first-child {
@@ -113,21 +113,27 @@
 				.tournabox-entry {
 					font-style: italic;
 				}
-				.tournabox-was-defeated-by { color: red }
-				.tournabox-defeated { color: green }
+				.tournabox-was-defeated-by { color: @color-c }
+				.tournabox-defeated { color: @color-d }
 				.tournabox-upset {
-					color: green;
+					color: @color-d;
 					font-weight: bold;
 				}
 				.tournabox-was-upset-by {
-					color: red;
+					color: @color-c;
 					font-weight: bold;
 				}
 				.tournabox-advanced {
-					color: green;
-					text-decoration: underline;
+					color: @color-f;
 				}
-				.tournabox-will-face { color: blue }
+				.tournabox-to-be-decided {
+					color: @color-f;
+				}
+				.tournabox-with-a-bye {
+					color: @color-f;
+				}
+
+				.tournabox-will-face { color: @color-b }
 
 				.tournabox-in-round {
 					.tournabox-round {

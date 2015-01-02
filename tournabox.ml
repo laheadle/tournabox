@@ -214,7 +214,6 @@ let all_filters =
 	  Regexp.split commas filter
 
 let select_and_render state =
-  state.results##style##display <- (Js.string "none");
   delete_children state.results;
   let positive = state.current_check_box in
   positive##checked <- Js._true;
@@ -238,7 +237,6 @@ let select_and_render state =
 	  let groups' = process_groups num_rounds groups espec filter in
 	  Lwt.return (
 		render_groups state.results groups';
-		state.results##style##display <- (Js.string "block")
 	  );
   | _ -> failwith "BUG: get_espec"
 
@@ -376,7 +374,7 @@ let show container groups_requested filters_requested tourney =
 	dom_add ~parent:menu_wrapper menu;
   in
   let () =
-	dom_add ~parent:filter_span (Jsutil.textNode "Filter: ");
+	dom_add ~parent:filter_span (Jsutil.textNode "Search: ");
 	root##className <- (Js.string "tournabox-root");
 	dom_add ~parent:container root;
 	add_menu ();
