@@ -498,7 +498,8 @@ let get_all_tourney_shells () =
 
 let unwrap_option = function Some x -> x | None -> assert false in
 let somes = function None -> false | Some _ -> true in
-let run _ = 
+let run _ =
+  Tlog.infof ~section:Tlog.input "Onload Event Invoked";
   let all = Util.filter_then_map
       ~mapf:unwrap_option ~filterf:somes
       (get_all_tourney_shells ()) in
@@ -510,13 +511,14 @@ let run _ =
     (*	| exn ->  ignore(Lwt_log_js.log ~exn ~level:Lwt_log_js.Error "error"); flush_all ()) 
 	  Printf.printf "%s" (Printexc.get_backtrace ()); flush_all ())*)
     all;
-  Js._true;
+  Js._true; (* Allow default action *)
 in
-
+Tlog.infof ~section:Tlog.input "Starting Up. This should only happen once.";
 ignore(
   Dom_html.addEventListener
-    (doc##body)
+    (Dom_html.window)
     Dom_html.Event.load
     (Dom_html.handler run)
-    Js._true)
+    Js._true
+)
 
