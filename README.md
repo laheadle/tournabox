@@ -6,7 +6,7 @@ Visitors can change how results are grouped and filtered. Publishers
 specify players and winners by entering text into the HTML page. All
 code is client-side; no server-side programming is needed.
 
-See [the Documentation](http://laheadle.github.io/docs-tournabox).
+See [the Documentation](http://laheadle.github.io/docs-tournabox/stable).
 
 ## Features
 
