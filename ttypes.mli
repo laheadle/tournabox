@@ -23,6 +23,8 @@ type column = {
 
 val column_content_string: column_fragment list -> string
 
+val is_upset: column list -> bool
+
 type header_spec = {
   header: column;
   should_filter_header: bool;
@@ -36,3 +38,4 @@ class type ['a] grouping_spec = object
   method in_group: 'a Choice.t -> 'a Choice.t list -> group_result
   method column_extractor: int -> int -> 'a Choice.t -> column list
 end
+
