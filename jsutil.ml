@@ -1,6 +1,9 @@
 
 let doc = Dom_html.document
 
+let get_classname elt =
+  Js.to_string elt##className
+
 let set_classname elt className =
   match className with
 	None -> ()
@@ -35,7 +38,20 @@ exception No_children
 let first_child node =
   Js.Opt.get (node##childNodes##item(0)) (fun () -> raise No_children)
 
+let child_elements node =
+  let children = Dom.list_of_nodeList (node##childNodes) in
+  let elements =
+    List.filter (fun c -> Js.Opt.test (Dom_html.CoerceTo.element c))
+      children
+  in
+  List.map
+    (fun c -> Js.Opt.get
+        (Dom_html.CoerceTo.element c)
+        (fun () -> assert false))
+    elements
+
 let text_child node =
+  if node##childNodes##length > 1 then raise Not_text;
   let child = first_child node in
   let opt = Dom.CoerceTo.text child in
   Js.Opt.get opt (fun () -> raise Not_text) 

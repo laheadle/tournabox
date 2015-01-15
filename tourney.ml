@@ -120,7 +120,7 @@ let rec won tourney index =
 	else
 	  tourney
   in
-  Tlog.debugf ~section:Tlog.playing "won %d %d\n" index (playing tourney index);
+  Tlog.infof ~section:Tlog.playing "won %d %d\n" index (playing tourney index);
   impl index (playing tourney index)
 
 
@@ -205,19 +205,12 @@ let init entries_list =
   } in
   perform_byes tourney 0 0
 
-let won_str =
-  let hash = Hashtbl.create 200 in
-  fun tourney partial ->
-	let entry = (
-	  try
-		Hashtbl.find hash partial
-	  with Not_found ->
-		let entry =
-		  Util.pick (entries_list tourney) partial Entry.to_string
-		in
-		Hashtbl.add hash partial entry;
-		entry) in
-	let i = (index_of_entry entry tourney) in
-	won tourney i
+let won_str tourney partial =
+  Tlog.debugf ~section:Tlog.playing "won_str %s\n" partial;
+  let entry =
+	Util.pick (entries_list tourney) partial Entry.to_string
+  in
+  let i = (index_of_entry entry tourney) in
+  won tourney i
 
 let num_slots tourney = tourney.num_slots

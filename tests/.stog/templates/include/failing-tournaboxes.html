@@ -1,0 +1,59 @@
+<div id="failing-containers" style="display: none">
+  <div class="tournabox-container"
+	   id="bad-child"
+	   expected-error="must contain only text">
+	<div id="bad-child-entries">
+	  <p>hi</p>
+	</div>
+  </div>
+  <div class="tournabox-container"
+	   id="no-entries"
+	   expected-error="no element with id no-entries-entries"></div>
+  <div class="tournabox-container"
+	   id="bad-power-of-two"
+	   tournabox-outcomes="empty-text"
+	   expected-error="entries must be a power">
+	<script type="text/plain" id="bad-power-of-two-entries">
+	  a ARG
+	  b MEX
+	  c USA
+	</script>
+  </div>
+  <div class="tournabox-container"
+	   id="bad-entry-1"
+	   tournabox-outcomes="empty-text"
+	   expected-error="invalid name and country">
+	<script type="text/plain" id="bad-entry-1-entries">
+	  a
+	  b
+	  c
+	</script>
+  </div>
+  <div class="tournabox-container"
+	   id="bad-group"
+	   tournabox-groups="By Name, Byy X"
+	   tournabox-outcomes="empty-text"
+	   expected-error="Invalid Group"></div>
+  <div class="tournabox-container"
+	   id="bad-winner-wins-twice"
+	   tournabox-groups="By Round"
+	   expected-error="Invalid Winner">
+	<script type="text/plain" id="bad-winner-wins-twice-entries">
+	  a
+	  b
+	  c
+	  d
+	</script>
+	<script type="text/plain" id="bad-winner-wins-twice-outcomes">
+	  a
+	  a
+	</script>
+  </div>
+</div>
+
+
+<div id="failure-data" style="display: none">
+  <script type="text/plain" id="empty-text">
+  </script>
+</div>
+

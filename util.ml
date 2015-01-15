@@ -40,10 +40,10 @@ let log base n =
   in
   iter 1 base
 
-let contains s1 s2 =
+let contains ~within s2 =
   (* Steps backward from the end *)
   let rec is_at pos i =
-	if not (s1.[pos + i] = s2.[i]) then false
+	if not (within.[pos + i] = s2.[i]) then false
 	else if i = 0 then true
 	else is_at pos (i -1)
   in
@@ -54,7 +54,7 @@ let contains s1 s2 =
 	else try_all (pos - 1)
   in
   let len2 = String.length s2 in
-  let len1 = String.length s1 in
+  let len1 = String.length within in
   let start = len1 - len2 in
   if len2 = 0 then true
   else
@@ -77,7 +77,7 @@ let hd_exn = function [] -> assert false | a :: b -> a
 let pick list partial to_string =
   let up = String.uppercase in
   let matching = List.filter (fun thing ->
-	contains (up (to_string thing)) (up partial)) list in
+	contains ~within: (up (to_string thing)) (up partial)) list in
   if List.length matching = 1 then
 	List.hd matching
   else

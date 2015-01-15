@@ -3,3 +3,4 @@ _build
 *.map
 *.js
 *.css
+tests/.stog/cache/*
