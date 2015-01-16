@@ -41,5 +41,13 @@ class type ['a] grouping_spec = object
   method column_extractor: int -> int -> 'a Choice.t -> column list
 end
 
-
-
+let is_upset columns =
+  let test = function
+      Text "upset" -> true
+    | Text "was upset by" -> true
+    | _ -> false
+  in
+  let is_upset frag_list =
+    List.exists test frag_list
+  in
+  List.exists is_upset (List.map (fun col -> col.content) columns)

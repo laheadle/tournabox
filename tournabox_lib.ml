@@ -96,7 +96,7 @@ let add_row_to_group (_, lst) row =
   lst := !lst @ [row]
 
 
-let refine_groups num_rounds groups grouping_spec (filter: or_filter) =
+let refine_groups num_rounds groups grouping_spec filter upsets_only =
   let results = ref [] in
   let num_groups = List.length groups in
   let do_group groupi group =
@@ -118,7 +118,8 @@ let refine_groups num_rounds groups grouping_spec (filter: or_filter) =
 			(should_filter_header && (or_filter_matches filter header_content)) ||
 			  (should_filter && or_filter_matches filter content))
 		  row in
-	  if matches then begin
+ 	  if matches &&
+		(not upsets_only) || (upsets_only && Ttypes.is_upset row) then begin
 		has_matches := true;
 		add_row_to_group group' row
 	  end
@@ -191,12 +192,13 @@ type ('results, 'root) state = {
   current_egroup: op; (* Egroup *)
   cache: raw_group Lwt.t GroupCache.t;
   hide_menubar: bool;
-  all_egroups: op list;
+  all_ops: op list;
   check_boxes: check list;
   tourney: T.tourney;
   root: 'root;
   results: 'results;
-  filter_box: Dom_html.inputElement Js.t
+  filter_box: Dom_html.inputElement Js.t;
+  upsets_only: bool;
 }
 
 (* There is Room for improvement here. Quotes are only parsed around
@@ -236,7 +238,7 @@ let select_and_render state =
 		fun (groups) ->
 	  Tlog.noticef ~section:Tlog.grouping "Cache found %d groups" (List.length groups);
 	  let num_rounds = T.num_rounds state.tourney in
-	  let groups' = refine_groups num_rounds groups espec filter in
+	  let groups' = refine_groups num_rounds groups espec filter state.upsets_only in
 	  Lwt.return (
 		render_groups state.results groups';
 	  );
@@ -266,7 +268,7 @@ let rec main_loop state =
 		   with Not_found -> No_Op))
 	in
 	(* Js.debugger (); *)
-	let clicks = (List.map clicks state.all_egroups) in
+	let clicks = (List.map clicks state.all_ops) in
 	name_clicks :: (key state.filter_box) :: clicks
   in
   Lwt.pick input_threads >>= (fun new_op ->
@@ -282,20 +284,31 @@ let rec main_loop state =
 		  Tlog.noticef ~section:Tlog.filter "in box: %s" value;
 		{ state with filter = value }
 	  | Name_Click target ->
+		let has_class cls =
+		  Js.to_bool (target##classList##contains
+						(Js.string cls))
+		in
+		let scroll_into_view () =
+		  state.root##scrollIntoView (Js._true);
+		  let y = Jsutil.offset_of state.root in
+		  Dom_html.window##scroll (0, y-100)
+		in
 		begin
-		  try
-			if Js.to_bool (target##classList##contains
-							 (Js.string "tournabox-name")) then
+		  if has_class "tournabox-name" then
+			try
 			  let literal = literal_filter (Jsutil.text_of target) in
 			  state.filter_box##value <- (Js.string literal );
-			  state.root##scrollIntoView (Js._true);
-			  let y = Jsutil.offset_of state.root in
-			  Dom_html.window##scroll (0, y-100);
-			  { state with filter = literal }
-			else
-			  state
-		  with
-			Jsutil.Not_text -> state
+			  scroll_into_view ();
+			  { state with filter = literal; upsets_only = false; }
+			with
+			  Jsutil.Not_text -> state
+		  else if
+			  has_class "tournabox-upset" || has_class "tournabox-was-upset-by" then
+			begin
+			  scroll_into_view ();
+			  { state with upsets_only = true }
+			end
+		  else state
 		end
 	  | No_Op -> state
 	in
@@ -371,13 +384,14 @@ let build_ui container chosen_specs
 	hide_menubar;
 	current_check_box = get_check (Util.hd_exn especs);
 	current_egroup = emake (Util.hd_exn especs);
-	all_egroups = List.map emake especs;
+	all_ops = List.map emake especs;
 	check_boxes = List.map get_check especs;
 	cache = !cache;
 	tourney;
 	results;
 	root;
-	filter_box
+	filter_box;
+	upsets_only = false;
   }
 
 (* A container node and the configuration of a tournabox *)
