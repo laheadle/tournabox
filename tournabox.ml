@@ -1,7 +1,7 @@
 
 module Lib = Tournabox_lib
 
-let report_error str = Dom_html.window##alert (Js.string str);;
+let report_error str = Dom_html.window##alert (Js.string ("Tournabox:\n" ^ str));;
 
 let run _ =
   Tlog.infof ~section:Tlog.input "Onload Event Invoked";
@@ -13,7 +13,13 @@ let run _ =
   in
   let all_good = all_good_shells
 	(Lib.get_all_tourney_shells ()) in
-  List.iter Lib.play all_good;
+  let play shell =
+	try
+	  Lib.play shell
+	with Failure str ->
+	  report_error str
+  in
+  List.iter play all_good;
   Js._true; (* Allow default action *)
 in
 
