@@ -9,7 +9,7 @@ let to_string entry =
   let seed_str =
 	(match entry.seed with None -> ""
 	| Some i -> "[" ^ (string_of_int i) ^ "]") in
-  Printf.sprintf "%s %s"
+  Printf.sprintf "%s%s"
   (entry.player ^ country_str)
 	seed_str
 

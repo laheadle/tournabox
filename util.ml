@@ -12,7 +12,6 @@ let rec pow a = function
     b * b * (if n mod 2 = 0 then 1 else a);;
 
 
-
 let replace arr i f =
   let old = arr.(i) in
   arr.(i) <- f(old)
@@ -74,6 +73,7 @@ let strip_spaces str =
 
 let hd_exn = function [] -> assert false | a :: b -> a
 
+
 let pick list partial to_string =
   let up = String.uppercase in
   let matching = List.filter (fun thing ->
@@ -81,12 +81,19 @@ let pick list partial to_string =
   if List.length matching = 1 then
 	List.hd matching
   else
-	failwith
-			 (List.fold_left 
-				(fun strs thing ->
-				  strs ^ (to_string thing) ^ "; ")
-				("Error: Invalid winner: \n'" ^ partial ^ "'\nmatches:\n")
-				matching)
+	(* In case of multiple matches, if one of the candidates matches
+	   exactly, then pick it *)
+	let exactly_matching = List.filter (fun thing ->
+	  up (to_string thing) = (up partial)) matching in
+	if List.length exactly_matching = 1 then
+	  List.hd exactly_matching
+	else
+	  failwith
+		(List.fold_left 
+		   (fun strs thing ->
+			 strs ^ (to_string thing) ^ "; ")
+		   ("Error: Invalid winner: \n'" ^ partial ^ "'\nmatches:\n")
+		   matching)
 
 let id x = x
 

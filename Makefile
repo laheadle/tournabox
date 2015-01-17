@@ -44,9 +44,9 @@ else
 endif
 
 # make question CASE=scrolling
-question:
-	ocamlbuild $(DEBUG_FLAGS) tests/test_$(CASE).byte
+question: dev checkTestDir
+	ocamlbuild $(DEBUG_FLAGS) test_$(CASE).byte
 	js_of_ocaml $(JSO_DEBUG_FLAGS) test_$(CASE).byte
-	cp test_$(CASE).js tests/test_$(CASE).html ~/Downloads/
+	cp test_$(CASE).js questions/test_$(CASE).html $(TOURNABOX_TESTDIR)
 
 .PHONY: testSuite js dev install uninstall checkTestDir question
