@@ -24,7 +24,7 @@ dev: checkTestDir install
 	cp ./tst.html $(TOURNABOX_TESTDIR)
 
 install: uninstall js
-	ocamlfind install $(project) META $(project).js $(project).css
+	ocamlfind install $(project) META $(project).js $(project).css $(project).less
 
 uninstall:
 	ocamlfind remove $(project)
