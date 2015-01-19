@@ -447,7 +447,13 @@ let play { entries; outcomes; chosen_specs;
 
 
 let chosen_specs groups_requested =
-  let all = [ Round_group.o; Performance_group.o; Country_group.o; Seed_group.o  ] in
+  let all = [
+	Round_group.o;
+	new Player_groups.performance_group;
+	Country_group.o;
+	new Player_groups.seed_group;
+  ]
+  in
   let matches a b = (String.lowercase a) = (String.lowercase b) in
   let spec_matcher name =  (fun spec -> matches name spec#name) in
   let group_exists group_name =
