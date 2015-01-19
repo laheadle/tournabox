@@ -1,4 +1,4 @@
-module C = Choice
+module C = Contest
 
 let contains_player lst player =
   let rec contains_iter = function
@@ -21,8 +21,8 @@ let contains_player lst player =
   in
   contains_iter lst
 
-let contains_choice_player lst choice =
-  match choice with
+let contains_contest_player lst contest =
+  match contest with
   | { C.entry_pair = (Some a, Some b) } ->
 	(contains_player lst a) || (contains_player lst b)
   |	{ C.entry_pair = (Some a, None) } ->
@@ -54,20 +54,20 @@ let o =
 		  Columns.as_header
 			(Columns.plain ~should_filter:false header_str);
 		should_filter_header = false }
-	method compare_choice a b = compare a b
+	method compare_contest a b = compare a b
 	method compare_group = C.compare_length_then_first
-	method in_group choice group =
+	method in_group contest group =
 	  let (round_matches, already) = match group with
 		  { C.round = r1; _ } :: _ ->
-			(choice.C.round = r1), (contains_choice_player group choice)
+			(contest.C.round = r1), (contains_contest_player group contest)
 		| _ -> failwith "BUG: Invalid group, by round" in
 	  {
 		Ttypes.quit = round_matches && already;
 		this_group = round_matches && not already
 	  }
-	method column_extractor num pos choice =
+	method column_extractor num pos contest =
 	  let open Columns in
-	  let columns = match choice with
+	  let columns = match contest with
 		| { C.entry_pair = Some (Somebody a),
 			Some Bye; winner = _ } -> [
 		  entry a;

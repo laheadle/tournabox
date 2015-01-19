@@ -1,4 +1,4 @@
-module C = Choice
+module C = Contest
 
 type t = { player: string; country: string option; seed: int option }
 type column = string * string option

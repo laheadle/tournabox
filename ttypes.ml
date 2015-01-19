@@ -34,11 +34,12 @@ type header_spec = {
 
 class type ['a] grouping_spec = object
   method name:string
-  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> 'a Choice.t list -> header_spec
-  method compare_choice: 'a Choice.t -> 'a Choice.t -> int
-  method compare_group: 'a Choice.t list -> 'a Choice.t list -> int
-  method in_group: 'a Choice.t -> 'a Choice.t list -> group_result
-  method column_extractor: int -> int -> 'a Choice.t -> column list
+  method header_spec: num_rounds:int -> num_groups:int -> pos:int ->
+	'a Contest.t list -> header_spec
+  method compare_contest: 'a Contest.t -> 'a Contest.t -> int
+  method compare_group: 'a Contest.t list -> 'a Contest.t list -> int
+  method in_group: 'a Contest.t -> 'a Contest.t list -> group_result
+  method column_extractor: int -> int -> 'a Contest.t -> column list
 end
 
 let is_upset columns =

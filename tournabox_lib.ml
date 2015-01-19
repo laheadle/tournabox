@@ -1,31 +1,31 @@
-module C = Choice
+module C = Contest
 module T = Tourney
 
 let (>>=) = Lwt.bind
 
 
 let select_grouped group_spec tourney =
-  let make_choices () = ref [] in
-  let choices = make_choices () in
-  let convert ichoice = T.choice_of_ichoice ichoice tourney in
-  let rec add_choice_iter choice lst =
-	match lst with [] -> [[choice]]
+  let make_contests () = ref [] in
+  let contests = make_contests () in
+  let convert icontest = T.contest_of_icontest icontest tourney in
+  let rec add_contest_iter contest lst =
+	match lst with [] -> [[contest]]
 	| hd :: tl -> 
-	  let group_result = group_spec#in_group choice hd in
+	  let group_result = group_spec#in_group contest hd in
 	  if group_result.Ttypes.quit then lst
 	  else
-		if group_result.Ttypes.this_group then (choice :: hd) :: tl
+		if group_result.Ttypes.this_group then (contest :: hd) :: tl
 		else
-		  hd :: (add_choice_iter choice tl)
+		  hd :: (add_contest_iter contest tl)
   in
-  let add_choice = function
-	| { C.entry_pair = (Some k, _) } as ichoice ->
+  let add_contest = function
+	| { C.entry_pair = (Some k, _) } as icontest ->
 	  if not (T.is_bye tourney k) then begin
 		Tlog.debugf ~section:Tlog.playing "Add %d" k;
-		choices :=
-		  add_choice_iter
-		  (convert ichoice)
-		  !choices
+		contests :=
+		  add_contest_iter
+		  (convert icontest)
+		  !contests
 	  end
 	| _ -> ()
   in
@@ -33,20 +33,20 @@ let select_grouped group_spec tourney =
 	let round = tourney.T.rounds.(i) in
 	for i = 0 to Array.length round - 1 do
 	  match round.(i) with
-		{ C.entry_pair = (Some k, Some j) } as ichoice ->
-		   add_choice ichoice;
+		{ C.entry_pair = (Some k, Some j) } as icontest ->
+		   add_contest icontest;
 		  (* Make sure the reference entry comes first *)
-			add_choice { ichoice with C.entry_pair = ( Some j, Some k ) };
-	  | { C.entry_pair = (None, Some k) } as ichoice ->
-		add_choice { ichoice with C.entry_pair = ( Some k, None ) };
-	  | { C.entry_pair = (Some k, None) } as ichoice ->
-		add_choice ichoice;
+			add_contest { icontest with C.entry_pair = ( Some j, Some k ) };
+	  | { C.entry_pair = (None, Some k) } as icontest ->
+		add_contest { icontest with C.entry_pair = ( Some k, None ) };
+	  | { C.entry_pair = (Some k, None) } as icontest ->
+		add_contest icontest;
 	  | _ -> (); (* skip empties *)
 	done
   done;
   List.sort
 	group_spec#compare_group
-	(List.map (List.sort group_spec#compare_choice) !choices)
+	(List.map (List.sort group_spec#compare_contest) !contests)
 
 let delete_children node =
   let children = node##childNodes in
@@ -100,14 +100,14 @@ let refine_groups num_rounds groups grouping_spec filter upsets_only =
   let results = ref [] in
   let num_groups = List.length groups in
   let do_group groupi group =
-	let num_choices = List.length group in
+	let num_contests = List.length group in
 	let { Ttypes.header; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi group in
 	let group' = (header, ref []) in
 	let has_matches = ref false in
-	let do_choice i choice =
+	let do_contest i contest =
 	  let row =
-		grouping_spec#column_extractor num_choices i choice in
+		grouping_spec#column_extractor num_contests i contest in
 	  let matches =
 		List.exists
 		  (fun { Ttypes.content;
@@ -124,7 +124,7 @@ let refine_groups num_rounds groups grouping_spec filter upsets_only =
 		add_row_to_group group' row
 	  end
 	in
-	List.iteri do_choice group;
+	List.iteri do_contest group;
 	if !has_matches then begin
 	  results := group' :: !results
 	end

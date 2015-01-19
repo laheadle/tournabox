@@ -1,6 +1,6 @@
-module C = Choice
+module C = Contest
 
-type round =  int Choice.t array
+type round =  int Contest.t array
 type tourney = { rounds: round array;
 				 num_slots: int;
 				 byes: (int, bool) Hashtbl.t;
@@ -15,13 +15,13 @@ let index_of_entry entry tourney =
 let entry_of_index index tourney =
   Hashtbl.find tourney.entries index
 
-let choice_of_ichoice ichoice tourney =
+let contest_of_icontest icontest tourney =
   C.map (fun i ->
 	try
 	  ignore(Hashtbl.find tourney.byes i);
 	  Entry.Bye
 	with _ ->
-	  Entry.Somebody (entry_of_index i tourney)) ichoice
+	  Entry.Somebody (entry_of_index i tourney)) icontest
 
 let log_2 len =
   if Util.power_of_two len then Util.log 2 len
@@ -64,7 +64,7 @@ let index_to_string tourney index =
 let playing tourney index =
   let path = path index tourney in
   let nth array n = array.(n) in
-  let choices = List.map2 nth (Array.to_list tourney.rounds) path in
+  let contests = List.map2 nth (Array.to_list tourney.rounds) path in
   let rec find lst = match lst with
 	| [] -> failwith ("Error: Invalid Winner:" ^ (index_to_string tourney index) ^
 						 ". \n\nThis player has already lost.")
@@ -76,7 +76,7 @@ let playing tourney index =
 						 ". \n\nThis player's next opponent is not yet determined.")
 	| hd :: tl -> find tl
   in
-  find choices
+  find contests
 
 let is_true hash key =
   try
@@ -92,23 +92,23 @@ let rec won tourney index =
 	let losepath = path loser tourney in
 	let (playedRound, winI) = path_intersect winpath losepath in
 	let nextI = next_position winI in
-	Util.replace (tourney.rounds.(playedRound)) winI (fun playedChoice ->
-	  { playedChoice with C.winner = Some winner });
+	Util.replace (tourney.rounds.(playedRound)) winI (fun playedContest ->
+	  { playedContest with C.winner = Some winner });
 	let schedule () =
 	  let next_round = tourney.rounds.(playedRound + 1) in
-	  let next_choice = next_round.(nextI) in
+	  let next_contest = next_round.(nextI) in
 	  let will_have_bye, to_play =
-		match next_choice with
+		match next_contest with
 		  { C.entry_pair = (p1, _p2) ; _ } ->
 			assert (_p2 = None);
 			match p1 with
 			  None ->
 				false,
-				{ next_choice with C.position = nextI;
+				{ next_contest with C.position = nextI;
 				  C.entry_pair = (Some winner, None) }
 			  | Some i_p1 ->
 				is_bye tourney i_p1,
-				{ next_choice with C.position = nextI;
+				{ next_contest with C.position = nextI;
 				  C.entry_pair = (p1, Some winner) }
 	  in
 	  next_round.(nextI) <- to_play;
@@ -124,14 +124,14 @@ let rec won tourney index =
   impl index (playing tourney index)
 
 
-(* The first round is initialized with full ichoices; other rounds are
-   initialized with empty ichoices *)
+(* The first round is initialized with full icontests; other rounds are
+   initialized with empty icontests *)
 let init entries_list =
   let open Entry in
   let len = List.length entries_list in
   let num_rounds = log_2 len in
   Tlog.noticef ~section:Tlog.input "%d rounds\n" num_rounds;
-  let empty_ichoice ~(round: int) = {
+  let empty_icontest ~(round: int) = {
 	C.entry_pair=(None,None);
 	winner=None;
 	round;
@@ -139,14 +139,14 @@ let init entries_list =
   } in
   let init_round i =
 	Array.make (Util.pow 2 (num_rounds - i - 1))
-	  (empty_ichoice ~round:i) in
+	  (empty_icontest ~round:i) in
   let byes = Hashtbl.create 4 in
   let init_first round =
 	for i = 0 to Array.length round - 1 do
 	  let p1 =  i * 2 in
 	  let p2 =  i * 2 + 1 in
-	  Util.replace round i (fun ichoice ->
-		{ ichoice with C.entry_pair=(Some p1, Some p2);
+	  Util.replace round i (fun icontest ->
+		{ icontest with C.entry_pair=(Some p1, Some p2);
 		  position = p1 })
 	done
   in
@@ -169,12 +169,12 @@ let init entries_list =
   let rounds = Array.init num_rounds init_round in
   let first =  rounds.(0) in
   init_first first;
-  let rec perform_byes tourney round_index choice_index =
-	Tlog.debugf ~section:Tlog.playing "byes round %d choice %d" round_index choice_index;
+  let rec perform_byes tourney round_index contest_index =
+	Tlog.debugf ~section:Tlog.playing "byes round %d contest %d" round_index contest_index;
 	let do_round round =
-	  if choice_index < Array.length round then
+	  if contest_index < Array.length round then
 		let tourney =
-		  match round.(choice_index) with
+		  match round.(contest_index) with
 			{ C.entry_pair = Some a, Some b; winner=None } ->
 			  if is_true byes a then
 				(won tourney b)
@@ -184,7 +184,7 @@ let init entries_list =
 				tourney
 		  | _ -> tourney
 		in
-		perform_byes tourney round_index (choice_index + 1)
+		perform_byes tourney round_index (contest_index + 1)
 	  else
 		perform_byes tourney (round_index + 1) 0
 	in

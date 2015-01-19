@@ -1,4 +1,4 @@
-module C = Choice
+module C = Contest
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let o = let open Entry in object
@@ -16,24 +16,24 @@ let o = let open Entry in object
 	{ Ttypes.header = Columns.(as_header (just_country header));
 	  should_filter_header = true; }
   method name = "By Country";
-  method compare_choice c1 c2 =
-	let entry choice =
-	  choice |> C.first |> fetch in
-	let player choice =
-	  choice |> C.first |> fetch |> (fun c -> c.player) in
+  method compare_contest c1 c2 =
+	let entry contest =
+	  contest |> C.first |> fetch in
+	let player contest =
+	  contest |> C.first |> fetch |> (fun c -> c.player) in
 	compare_seeds (entry c1) (entry c2) (fun () ->
 	  compare (player c1) (player c2) )
 
   method compare_group =  fun g1 g2 -> -(C.compare_length_then_first g1 g2)
-  method in_group choice group = {
+  method in_group contest group = {
 	Ttypes.quit = false;
-	this_group = C.compare_first choice group (fun p ->
+	this_group = C.compare_first contest group (fun p ->
 	  let p = fetch p in p.country)
   }
-  method column_extractor num pos choice =
+  method column_extractor num pos contest =
 	let open Columns in
 	let columns =
-	  match choice with
+	  match contest with
 	   { C.entry_pair = Some (Somebody a),
 		  Some Bye; winner = _; round } ->
 		[ entry a;

@@ -11,12 +11,12 @@ let first = function
 
 
 let map f = function
-{ entry_pair=(p1,p2); winner; _ } as choice ->
+{ entry_pair=(p1,p2); winner; _ } as contest ->
   let convert opt = match opt with
 	  None -> None 
 	| Some pi -> Some (f pi)
   in
-  { choice with
+  { contest with
 	entry_pair = (convert p1, convert p2);
 	winner = convert winner;
   }
@@ -37,18 +37,18 @@ let compare_length_then_first g1 g2 =
   else
 	cmp
 
-let compare_first choice group f =
-  (match choice with
+let compare_first contest group f =
+  (match contest with
 	{ entry_pair = (Some a), _ ; _ }
 	-> (match group with
 	  { entry_pair = (Some b), _ } :: _ ->
 		(f a) = (f b)
 	| _ -> failwith "Bad existing member")
-  | _ -> failwith "Bad choice for group")
+  | _ -> failwith "Bad contest for group")
 
 let extract_first_first lst f =
 	match lst with
-	  choice :: tl -> 
-		f (first choice)
+	  contest :: tl -> 
+		f (first contest)
 	| _ -> failwith "Bad extract_first_first"
 
