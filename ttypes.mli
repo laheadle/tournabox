@@ -29,12 +29,3 @@ type header_spec = {
   should_filter_header: bool;
 }
 
-class type ['a] grouping_spec = object
-  method name:string
-  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> 'a Contest.t list -> header_spec
-  method compare_contest: 'a Contest.t -> 'a Contest.t -> int
-  method compare_group: 'a Contest.t list -> 'a Contest.t list -> int
-  method in_group: 'a Contest.t -> 'a Contest.t list -> group_result
-  method column_extractor: int -> int -> 'a Contest.t -> column list
-end
-

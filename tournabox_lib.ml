@@ -117,17 +117,15 @@ let render_groups results groups =
 
 type check = Dom_html.inputElement Js.t
 
-type grouping_spec = Entry.slot Ttypes.grouping_spec
-
 type op =
   Key
 | No_Op
-| EGroup of check * grouping_spec
+| EGroup of check * T.grouping_spec
 | Name_Click of Dom_html.element Js.t
 
 (* Cache of group selections *)
 module GroupCache = Map.Make(struct
-  type t = grouping_spec
+  type t = T.grouping_spec
   let compare = compare
 end)
 
@@ -348,7 +346,7 @@ type container = Dom_html.element Js.t
 type tourney_shell = {
   entries: string;
   outcomes:  string;
-  chosen_specs: grouping_spec list;
+  chosen_specs: T.grouping_spec list;
   hide_menubar: bool;
   filters_requested: string;
   container: Dom_html.element Js.t;

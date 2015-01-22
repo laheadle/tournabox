@@ -11,7 +11,16 @@ type tourney = { rounds: round array;
 type icontest = int Contest.t
 type contest = Entry.slot Contest.t
 
-type grouping_spec = Entry.slot Ttypes.grouping_spec
+
+class type grouping_spec = object
+  method name:string
+  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> contest list -> Ttypes.header_spec
+  method compare_contest: contest -> contest -> int
+  method compare_group: contest list -> contest list -> int
+  method in_group: contest -> contest list -> Ttypes.group_result
+  method column_extractor: int -> int -> contest -> Ttypes.column list
+end
+
 type group = Entry.slot Contest.t list
 
 let index_of_entry entry tourney =
