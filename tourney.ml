@@ -8,6 +8,11 @@ type tourney = { rounds: round array;
 				 entries: (int, Entry.t) Hashtbl.t;
 				 indices: (Entry.t, int) Hashtbl.t
 			   }
+type icontest = int Contest.t
+type contest = Entry.slot Contest.t
+
+type grouping_spec = Entry.slot Ttypes.grouping_spec
+type group = Entry.slot Contest.t list
 
 let index_of_entry entry tourney =
   Hashtbl.find tourney.indices entry
@@ -86,7 +91,7 @@ let is_true hash key =
 
 let is_bye tourney i = is_true tourney.byes i
 
-let rec won tourney index =
+let rec won_impl tourney index =
   let impl winner loser = 
 	let winpath = path winner tourney in
 	let losepath = path loser tourney in
@@ -113,14 +118,14 @@ let rec won tourney index =
 	  in
 	  next_round.(nextI) <- to_play;
 	  (* Go ahead and advance the bye *)
-	  if will_have_bye then won tourney winner else tourney
+	  if will_have_bye then won_impl tourney winner else tourney
 	in
 	if playedRound < num_rounds tourney - 1 then
 	  schedule ()
 	else
 	  tourney
   in
-  Tlog.infof ~section:Tlog.playing "won %d %d\n" index (playing tourney index);
+  Tlog.infof ~section:Tlog.playing "won_impl %d %d\n" index (playing tourney index);
   impl index (playing tourney index)
 
 
@@ -177,9 +182,9 @@ let init entries_list =
 		  match round.(contest_index) with
 			{ C.entry_pair = Some a, Some b; winner=None } ->
 			  if is_true byes a then
-				(won tourney b)
+				(won_impl tourney b)
 			  else if is_true byes b then
-				(won tourney a)
+				(won_impl tourney a)
 			  else
 				tourney
 		  | _ -> tourney
@@ -205,12 +210,62 @@ let init entries_list =
   } in
   perform_byes tourney 0 0
 
-let won_str tourney partial =
-  Tlog.debugf ~section:Tlog.playing "won_str %s\n" partial;
+let won tourney partial =
+  Tlog.debugf ~section:Tlog.playing "won %s\n" partial;
   let entry =
 	Util.pick (entries_list tourney) partial Entry.to_string
   in
   let i = (index_of_entry entry tourney) in
-  won tourney i
+  won_impl tourney i
 
 let num_slots tourney = tourney.num_slots
+
+let num_contests round = Array.length round
+
+let get_round tourney i = tourney.rounds.(i)
+
+let get_contest round i = round.(i)
+
+let select_grouped group_spec tourney =
+  let make_contests () = ref [] in
+  let contests = make_contests () in
+  let convert icontest = contest_of_icontest icontest tourney in
+  let rec add_contest_iter contest lst =
+	match lst with [] -> [[contest]]
+	| hd :: tl -> 
+	  let group_result = group_spec#in_group contest hd in
+	  if group_result.Ttypes.quit then lst
+	  else
+		if group_result.Ttypes.this_group then (contest :: hd) :: tl
+		else
+		  hd :: (add_contest_iter contest tl)
+  in
+  let add_contest = function
+	| { C.entry_pair = (Some k, _) } as icontest ->
+	  if not (is_bye tourney k) then begin
+		Tlog.debugf ~section:Tlog.playing "Add %d" k;
+		contests :=
+		  add_contest_iter
+		  (convert icontest)
+		  !contests
+	  end
+	| _ -> ()
+  in
+  for i = 0 to num_rounds tourney - 1 do
+	let round = get_round tourney i in
+	for i = 0 to num_contests round - 1 do
+	  match get_contest round i with
+		{ C.entry_pair = (Some k, Some j) } as icontest ->
+		   add_contest icontest;
+		  (* Make sure the reference entry comes first *)
+			add_contest { icontest with C.entry_pair = ( Some j, Some k ) };
+	  | { C.entry_pair = (None, Some k) } as icontest ->
+		add_contest { icontest with C.entry_pair = ( Some k, None ) };
+	  | { C.entry_pair = (Some k, None) } as icontest ->
+		add_contest icontest;
+	  | _ -> (); (* skip empties *)
+	done
+  done;
+  List.sort
+	group_spec#compare_group
+	(List.map (List.sort group_spec#compare_contest) !contests)

@@ -26,16 +26,16 @@ let entry ?(filterable=true) e =
   let (class_name, seed) = 
 	match e.Entry.seed with
 	  Some s ->
-		Classes.seeded, [Elt {tag="span";class_name=Classes.seed;text=string_of_int s}]
+		Classes.seeded, [Elt {class_name=Classes.seed;text=string_of_int s}]
 	| _ -> Classes.unseeded, []
   in
   let country =
 	match e.Entry.country with
 	  None -> []
-	| Some c -> [ Elt {tag="span";class_name=Classes.country;text=c} ]
+	| Some c -> [ Elt {class_name=Classes.country;text=c} ]
   in
   let content=[
-	Elt {tag="span";class_name=Classes.name;text=e.Entry.player}
+	Elt {class_name=Classes.name;text=e.Entry.player}
   ] @ country @ seed
   in  {
 	content;
@@ -49,17 +49,17 @@ let just_country c = {
   should_filter=true;
 }
 
-let as_header = function
-  | { class_name=Some str} as column ->
+let as_header =
+  let mk column str =
 	{ column with class_name = Some (str ^ " tournabox-header") }
-  | { class_name=None} as column ->
-	{ column with class_name = Some ("tournabox-header") }
+  in function
+  | { class_name=Some str} as column -> mk column str
+  | { class_name=None} as column -> mk column ""
 
 let in_round r =  {
   content=[
 	Text "In round";
 	Elt {
-	  tag="span";
 	  class_name=Classes.round;
 	  text=string_of_int r;
 	}

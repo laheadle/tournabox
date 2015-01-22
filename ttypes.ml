@@ -5,16 +5,15 @@ type group_result =  {
 }
 
 
-(* non-nested html tag *)
-type shallow_elt = {
-  tag: string;
+(* non-nested html span *)
+type shallow_span = {
   class_name: string;
   text: string;
 }
 
 type column_fragment =
   Text of string
-| Elt of shallow_elt
+| Elt of shallow_span
 
 type column = {
   content: column_fragment list;

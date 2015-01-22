@@ -13,6 +13,9 @@ TESTING_FLAGS := -pkgs ojasmine
 templates=tests/.stog/templates
 testOutDir=$(TOURNABOX_TESTDIR)/tests
 
+doc:
+	ocamlbuild $(FLAGS) $(project).docdir/index.html
+
 js:
 	ocamlbuild $(FLAGS) $(project).byte
 	js_of_ocaml $(JSO_FLAGS) $(project).byte

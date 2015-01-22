@@ -68,4 +68,10 @@ let offset_of elt =
   in
   iter (elt##offsetTop) elt
 
+let delete_children node =
+  let children = node##childNodes in
+  for i = 0 to children##length - 1 do
+    Js.Opt.iter (node##firstChild) (fun child -> Dom.removeChild node child) ;
+  done
+
 					   

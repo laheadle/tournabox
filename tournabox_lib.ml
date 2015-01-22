@@ -3,59 +3,10 @@ module T = Tourney
 
 let (>>=) = Lwt.bind
 
-
-let select_grouped group_spec tourney =
-  let make_contests () = ref [] in
-  let contests = make_contests () in
-  let convert icontest = T.contest_of_icontest icontest tourney in
-  let rec add_contest_iter contest lst =
-	match lst with [] -> [[contest]]
-	| hd :: tl -> 
-	  let group_result = group_spec#in_group contest hd in
-	  if group_result.Ttypes.quit then lst
-	  else
-		if group_result.Ttypes.this_group then (contest :: hd) :: tl
-		else
-		  hd :: (add_contest_iter contest tl)
-  in
-  let add_contest = function
-	| { C.entry_pair = (Some k, _) } as icontest ->
-	  if not (T.is_bye tourney k) then begin
-		Tlog.debugf ~section:Tlog.playing "Add %d" k;
-		contests :=
-		  add_contest_iter
-		  (convert icontest)
-		  !contests
-	  end
-	| _ -> ()
-  in
-  for i = 0 to Array.length tourney.T.rounds - 1 do
-	let round = tourney.T.rounds.(i) in
-	for i = 0 to Array.length round - 1 do
-	  match round.(i) with
-		{ C.entry_pair = (Some k, Some j) } as icontest ->
-		   add_contest icontest;
-		  (* Make sure the reference entry comes first *)
-			add_contest { icontest with C.entry_pair = ( Some j, Some k ) };
-	  | { C.entry_pair = (None, Some k) } as icontest ->
-		add_contest { icontest with C.entry_pair = ( Some k, None ) };
-	  | { C.entry_pair = (Some k, None) } as icontest ->
-		add_contest icontest;
-	  | _ -> (); (* skip empties *)
-	done
-  done;
-  List.sort
-	group_spec#compare_group
-	(List.map (List.sort group_spec#compare_contest) !contests)
-
-let delete_children node =
-  let children = node##childNodes in
-  for i = 0 to children##length - 1 do
-    Js.Opt.iter (node##firstChild) (fun child -> Dom.removeChild node child) ;
-  done
-
 let doc = Dom_html.document
 
+(* An or-filter is a list of filters; if any is true, the or-filter is
+   true *)
 type or_filter = (string -> bool) list
 
 let or_filter_matches or_filter str =
@@ -74,11 +25,8 @@ let add_td row { Ttypes.class_name; content } =
   let add_fragment = function
 	| Ttypes.Text txt ->
 	  Dom.appendChild td (Jsutil.textNode txt);
-	| Ttypes.Elt {Ttypes.tag;class_name;text} ->
-	  let elt = match tag with
-		  "span" -> Dom_html.createSpan Jsutil.doc
-		| _ -> assert false
-	  in
+	| Ttypes.Elt {Ttypes.class_name;text} ->
+	  let elt = Dom_html.createSpan Jsutil.doc in
 	  Dom.appendChild elt (Jsutil.textNode text);
 	  elt##className <- (Js.string class_name);
 	  Dom.appendChild td elt
@@ -218,7 +166,7 @@ type ('results, 'root) state = {
 	  Regexp.split commas filter
 
 let select_and_render state =
-  delete_children state.results;
+  Jsutil.delete_children state.results;
   let positive = state.current_check_box in
   positive##checked <- Js._true;
   List.iter (fun negative -> negative##checked <- Js._false)
@@ -376,7 +324,7 @@ let build_ui container chosen_specs
 	   each group_spec. This is done using parallel threads; Cache the
 	   result. *)
 	cache := GroupCache.add spec (Lwt_js.yield () >>= (fun () ->
-	  (Lwt.return (select_grouped spec tourney)))) !cache;
+	  (Lwt.return (T.select_grouped spec tourney)))) !cache;
 	EGroup (check, spec) in
   let get_check (check, _) = check in
   {
@@ -394,14 +342,16 @@ let build_ui container chosen_specs
 	upsets_only = false;
   }
 
+type container = Dom_html.element Js.t
+
 (* A container node and the configuration of a tournabox *)
-type 'node tourney_shell = {
+type tourney_shell = {
   entries: string;
   outcomes:  string;
   chosen_specs: grouping_spec list;
   hide_menubar: bool;
   filters_requested: string;
-  container: 'node;
+  container: Dom_html.element Js.t;
 }
 
 let play { entries; outcomes; chosen_specs;
@@ -435,7 +385,7 @@ let play { entries; outcomes; chosen_specs;
   let tourney = T.init entries in
   Tlog.noticef ~section:Tlog.input "initialized\n";
 	(* let now1 = jsnew Js.date_now () in *)
-  let current_state = List.fold_left T.won_str tourney outcomes in
+  let current_state = List.fold_left T.won tourney outcomes in
   Tlog.noticef ~section:Tlog.input "winning done\n";
 	(* let now2 = jsnew Js.date_now () in 
 	   Printf.printf "%d secs to win" now2#getMilliseconds; *)
