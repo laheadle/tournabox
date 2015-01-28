@@ -11,16 +11,6 @@ type tourney = { rounds: round array;
 type icontest = int Contest.t
 type contest = Entry.slot Contest.t
 
-
-class type grouping_spec = object
-  method name:string
-  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> contest list -> Ttypes.header_spec
-  method compare_contest: contest -> contest -> int
-  method compare_group: contest list -> contest list -> int
-  method in_group: contest -> contest list -> Ttypes.group_result
-  method column_extractor: int -> int -> contest -> Ttypes.column list
-end
-
 type group = Entry.slot Contest.t list
 
 let index_of_entry entry tourney =
@@ -236,27 +226,16 @@ let get_round tourney i = tourney.rounds.(i)
 let get_contest round i = round.(i)
 
 let select_grouped group_spec tourney =
-  let make_contests () = ref [] in
-  let contests = make_contests () in
+  let open Group in
+  let groups = GroupList.make group_spec in
   let convert icontest = contest_of_icontest icontest tourney in
-  let rec add_contest_iter contest lst =
-	match lst with [] -> [[contest]]
-	| hd :: tl -> 
-	  let group_result = group_spec#in_group contest hd in
-	  if group_result.Ttypes.quit then lst
-	  else
-		if group_result.Ttypes.this_group then (contest :: hd) :: tl
-		else
-		  hd :: (add_contest_iter contest tl)
-  in
-  let add_contest = function
+  let add_non_bye = function
 	| { C.entry_pair = (Some k, _) } as icontest ->
 	  if not (is_bye tourney k) then begin
 		Tlog.debugf ~section:Tlog.playing "Add %d" k;
-		contests :=
-		  add_contest_iter
+		GroupList.add_contest
 		  (convert icontest)
-		  !contests
+		  groups
 	  end
 	| _ -> ()
   in
@@ -265,16 +244,14 @@ let select_grouped group_spec tourney =
 	for i = 0 to num_contests round - 1 do
 	  match get_contest round i with
 		{ C.entry_pair = (Some k, Some j) } as icontest ->
-		   add_contest icontest;
+		   add_non_bye icontest;
 		  (* Make sure the reference entry comes first *)
-			add_contest { icontest with C.entry_pair = ( Some j, Some k ) };
+			add_non_bye { icontest with C.entry_pair = ( Some j, Some k ) };
 	  | { C.entry_pair = (None, Some k) } as icontest ->
-		add_contest { icontest with C.entry_pair = ( Some k, None ) };
+		add_non_bye { icontest with C.entry_pair = ( Some k, None ) };
 	  | { C.entry_pair = (Some k, None) } as icontest ->
-		add_contest icontest;
+		add_non_bye icontest;
 	  | _ -> (); (* skip empties *)
 	done
   done;
-  List.sort
-	group_spec#compare_group
-	(List.map (List.sort group_spec#compare_contest) !contests)
+  GroupList.sort groups;

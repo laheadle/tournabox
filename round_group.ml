@@ -1,25 +1,16 @@
 module C = Contest
+module G = Group
 
 let contains_player lst player =
-  let rec contains_iter = function
-	| [] -> false
-	| hd :: tl ->
-	  let head_matches =
-		match hd with
-		  { C.entry_pair = (Some a, Some b) } ->
-			a = player || b = player
-		|	{ C.entry_pair = (Some a, None) } ->
-		  a = player
-		| { C.entry_pair = (None, Some b) } ->
-		  b = player
-		| { C.entry_pair = (None, None) } ->
-		  false
-	  in
-	  if head_matches then true
-	  else
-		contains_iter tl
-  in
-  contains_iter lst
+  G.Group.contains (function
+  | { C.entry_pair = (Some a, Some b) } ->
+	a = player || b = player
+  |	{ C.entry_pair = (Some a, None) } ->
+	a = player
+  | { C.entry_pair = (None, Some b) } ->
+	b = player
+  | { C.entry_pair = (None, None) } ->
+	false) lst
 
 let contains_contest_player lst contest =
   match contest with
@@ -37,7 +28,7 @@ let o =
   (object
 	method name = "By Round"
 	method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	  let len = List.length lst in
+	  let len = G.Group.length lst in
 	  let unplayed = num_rounds - num_groups in
 	  let this_round = unplayed + round in
 	  let header_str =
@@ -55,10 +46,10 @@ let o =
 			(Columns.plain ~should_filter:false header_str);
 		should_filter_header = false }
 	method compare_contest a b = compare a b
-	method compare_group = C.compare_length_then_first
+	method compare_group = G.Group.compare_length_then_first
 	method in_group contest group =
-	  let (round_matches, already) = match group with
-		  { C.round = r1; _ } :: _ ->
+	  let (round_matches, already) = match G.Group.first group with
+		  Some { C.round = r1; _ } ->
 			(contest.C.round = r1), (contains_contest_player group contest)
 		| _ -> failwith "BUG: Invalid group, by round" in
 	  {

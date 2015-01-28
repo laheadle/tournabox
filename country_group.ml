@@ -1,9 +1,10 @@
 module C = Contest
+module G = Group
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let o = let open Entry in object
   method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	let header =  C.extract_first_first lst
+	let header =  G.Group.extract_first_first lst
 		(fun p ->
 		  let p = fetch p in
 		  match p.country with None -> assert false
@@ -24,10 +25,10 @@ let o = let open Entry in object
 	compare_seeds (entry c1) (entry c2) (fun () ->
 	  compare (player c1) (player c2) )
 
-  method compare_group =  fun g1 g2 -> -(C.compare_length_then_first g1 g2)
+  method compare_group =  fun g1 g2 -> -(G.Group.compare_length_then_first g1 g2)
   method in_group contest group = {
 	Ttypes.quit = false;
-	this_group = C.compare_first contest group (fun p ->
+	this_group = G.Group.compare_first contest group (fun p ->
 	  let p = fetch p in p.country)
   }
   method column_extractor num pos contest =

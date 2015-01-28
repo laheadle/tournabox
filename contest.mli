@@ -23,14 +23,3 @@ type 'a t = {
 val first : 'a t -> 'a
 
 val map : ('a -> 'b) -> 'a t -> 'b t
-
-(** This is for sorting groups. First, compare their lengths. Then
-	look at the first player in each first contest. If they both won
-	or both lost, compare the contestants. Otherwise compare the
-	win/loss results. *)
-
-val compare_length_then_first : 'a t list -> 'a t list -> int
-
-val compare_first : 'a t -> 'a t list -> ('a -> 'b) -> bool
-
-val extract_first_first : 'a t list -> ('a -> 'b) -> 'b

@@ -21,34 +21,3 @@ let map f = function
 	winner = convert winner;
   }
 
-let compare_length_then_first g1 g2 =
-  let cmp = (compare (List.length g1)
-				(List.length g2)) in
-  if cmp = 0 then (match g1, g2 with
-	({ entry_pair = a, _ ; winner=aw } :: _,
-	 { entry_pair = b, _ ; winner=bw } :: _) ->
-	  let awon = (aw = a) in
-	  let bwon = (bw = b) in
-	  if awon = bwon then
-		-(compare a b)
-	  else
-		compare awon bwon
-  | _ -> failwith "bad group compare")
-  else
-	cmp
-
-let compare_first contest group f =
-  (match contest with
-	{ entry_pair = (Some a), _ ; _ }
-	-> (match group with
-	  { entry_pair = (Some b), _ } :: _ ->
-		(f a) = (f b)
-	| _ -> failwith "Bad existing member")
-  | _ -> failwith "Bad contest for group")
-
-let extract_first_first lst f =
-	match lst with
-	  contest :: tl -> 
-		f (first contest)
-	| _ -> failwith "Bad extract_first_first"
-

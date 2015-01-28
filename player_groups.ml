@@ -1,10 +1,12 @@
 module C = Contest
+module G = Group
+
 open Entry
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 class ['a] parent = object
   method header_spec ~(num_rounds: int) ~(num_groups: int) ~(pos: int) lst =
-	let header = C.extract_first_first lst fetch in
+	let header = G.Group.extract_first_first lst fetch in
 	{ Ttypes.header = Columns.(as_header (entry header));
 	  should_filter_header = true; }
   method compare_contest (c1: slot C.t) (c2: slot C.t) = -(compare c1.C.round c2.C.round)
@@ -48,20 +50,20 @@ end
 class seed_group = object
 	inherit [slot C.t] parent
 	method name = "By Seed";
-	method compare_group (g1: slot C.t list) (g2: slot C.t list) =
-	(match g1, g2 with
-	  ({ C.entry_pair = Some (Somebody a), _ ; _ } :: _,
-	   { C.entry_pair = Some (Somebody b), _ ; _ } :: _) ->
+	method compare_group g1 g2 =
+	(match (G.Group.first g1), (G.Group.first g2) with
+	  (Some { C.entry_pair = Some (Somebody a), _ ; _ },
+	   Some { C.entry_pair = Some (Somebody b), _ ; _ }) ->
 		compare_seeds a b ~if_none:(fun () ->
 		  let cmp =
-			compare (List.length g2) (List.length g1) in
+			compare (G.Group.length g2) (G.Group.length g1) in
 		  if cmp = 0 then
 			compare (to_string a) (to_string  b)
 		  else cmp)
 	| _ -> failwith "bad group compare")
   method in_group contest group = {
 	Ttypes.quit = false;
-	this_group = C.compare_first contest group
+	this_group = G.Group.compare_first contest group
 	  (function | Somebody e -> e.seed, to_string e | Bye -> assert false);
   }
   end
@@ -69,15 +71,15 @@ class seed_group = object
 class performance_group = object
 	inherit [slot C.t] parent
 	method name = "By Performance"
-	method compare_group (g1: slot C.t list) (g2: slot C.t list) =
-	  -(C.compare_length_then_first g1 g2)
+	method compare_group g1 g2 =
+	  -(G.Group.compare_length_then_first g1 g2)
 	method in_group contest group = {
 	  Ttypes.quit = false;
 	  this_group =
 		(match contest with
 		  { C.entry_pair = (Some (Somebody a)), _ ; _ }
-		  -> (match group with
-			{ C.entry_pair = (Some (Somebody b)), _ } :: _ ->
+		  -> (match G.Group.first group with
+			Some { C.entry_pair = (Some (Somebody b)), _ } ->
 			  a = b
 		  | _ -> failwith "BUG: Bad existing member")
 		| _ -> failwith "BUG: Bad contest for group")

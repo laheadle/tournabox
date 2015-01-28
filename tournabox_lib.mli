@@ -4,7 +4,7 @@ type container = Dom_html.element Js.t
 type tourney_shell = {
   entries : string;
   outcomes : string;
-  chosen_specs : Tourney.grouping_spec list;
+  chosen_specs : Group.grouping_spec list;
   hide_menubar : bool;
   filters_requested : string;
   container : container

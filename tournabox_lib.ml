@@ -1,5 +1,6 @@
 module C = Contest
 module T = Tourney
+module G = Group
 
 let (>>=) = Lwt.bind
 
@@ -38,6 +39,8 @@ let add_td row { Ttypes.class_name; content } =
 type ('header, 'row) group =
   'header * ('row list ref)
 
+let make_groups () = ref []
+
 let make_group header = (header, ref [])
 
 let add_row_to_group (_, lst) row =
@@ -45,10 +48,10 @@ let add_row_to_group (_, lst) row =
 
 
 let refine_groups num_rounds groups grouping_spec filter upsets_only =
-  let results = ref [] in
-  let num_groups = List.length groups in
+  let results = make_groups () in
+  let num_groups = G.GroupList.length groups in
   let do_group groupi group =
-	let num_contests = List.length group in
+	let num_contests = G.Group.length group in
 	let { Ttypes.header; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi group in
 	let group' = (header, ref []) in
@@ -72,12 +75,12 @@ let refine_groups num_rounds groups grouping_spec filter upsets_only =
 		add_row_to_group group' row
 	  end
 	in
-	List.iteri do_contest group;
+	G.Group.iteri do_contest group;
 	if !has_matches then begin
 	  results := group' :: !results
 	end
   in
-  List.iteri do_group groups;
+  G.GroupList.iteri do_group groups;
   List.rev !results
 
 let render_groups results groups =
@@ -120,17 +123,17 @@ type check = Dom_html.inputElement Js.t
 type op =
   Key
 | No_Op
-| EGroup of check * T.grouping_spec
+| EGroup of check * G.grouping_spec
 | Name_Click of Dom_html.element Js.t
 
 (* Cache of group selections *)
 module GroupCache = Map.Make(struct
-  type t = T.grouping_spec
+  type t = G.grouping_spec
   let compare = compare
 end)
 
 (* Cached result of select_grouped *)
-type raw_group = Entry.slot C.t list list
+type raw_group = Group.GroupList.t
 
 type ('results, 'root) state = {
   filter: string;
@@ -182,7 +185,7 @@ let select_and_render state =
 	EGroup (check, espec) ->
 	  GroupCache.find espec state.cache >>=
 		fun (groups) ->
-	  Tlog.noticef ~section:Tlog.grouping "Cache found %d groups" (List.length groups);
+	  Tlog.noticef ~section:Tlog.grouping "Cache found %d groups" (G.GroupList.length groups);
 	  let num_rounds = T.num_rounds state.tourney in
 	  let groups' = refine_groups num_rounds groups espec filter state.upsets_only in
 	  Lwt.return (
@@ -224,6 +227,7 @@ let rec main_loop state =
 		  state.filter_box##value <- (Js.string "" );
           { state with current_check_box = check_box;
 			filter = "";
+			upsets_only = false;
             current_egroup = new_op }
 	  | Key ->
 		let value = (Js.to_string state.filter_box##value) in
@@ -243,7 +247,7 @@ let rec main_loop state =
 		  if has_class "tournabox-name" then
 			try
 			  let literal = literal_filter (Jsutil.text_of target) in
-			  state.filter_box##value <- (Js.string literal );
+			  state.filter_box##value <- (Js.string literal);
 			  scroll_into_view ();
 			  { state with filter = literal; upsets_only = false; }
 			with
@@ -346,7 +350,7 @@ type container = Dom_html.element Js.t
 type tourney_shell = {
   entries: string;
   outcomes:  string;
-  chosen_specs: T.grouping_spec list;
+  chosen_specs: G.grouping_spec list;
   hide_menubar: bool;
   filters_requested: string;
   container: Dom_html.element Js.t;
