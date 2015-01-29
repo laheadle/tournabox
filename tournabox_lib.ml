@@ -84,7 +84,45 @@ let refine_groups num_rounds groups (grouping_spec: G.grouping_spec)
   G.GroupList.iteri do_group groups;
   List.rev !results
 
-let render_groups results groups =
+type check = Dom_html.inputElement Js.t
+
+type op =
+  Key
+| No_Op
+| EGroup of check * G.grouping_spec
+| Name_Click of Dom_html.element Js.t
+
+(* Cache of group selections *)
+module GroupCache = Map.Make(struct
+  type t = G.grouping_spec
+  let compare = compare
+end)
+
+(* Cached result of select_grouped *)
+type raw_group = Group.GroupList.t
+
+type ('results, 'root) state = {
+  filter: string;
+  current_check_box: check;
+  current_egroup: op; (* Egroup *)
+  cache: raw_group Lwt.t GroupCache.t;
+  hide_menubar: bool;
+  all_ops: op list;
+  check_boxes: check list;
+  tourney: T.tourney;
+  root: 'root;
+  mutable results: 'results;
+  filter_box: Dom_html.inputElement Js.t;
+  upsets_only: bool;
+}
+
+let create_results_table () =
+  let results = Dom_html.createTable doc in
+  results##className <- (Js.string "tournabox-results");
+  results
+
+let render_groups state groups =
+  let results = create_results_table () in
   let do_group (header, rows) =
 	let header_row = Dom_html.createTr doc in
 	header_row##className <- Js.string "tournabox-header-row";
@@ -117,39 +155,10 @@ let render_groups results groups =
 	in
 	List.iter do_row !rows
   in
-  List.iter do_group groups
+  List.iter do_group groups;
+  Dom.replaceChild state.root results state.results;
+  state.results <- results
 
-type check = Dom_html.inputElement Js.t
-
-type op =
-  Key
-| No_Op
-| EGroup of check * G.grouping_spec
-| Name_Click of Dom_html.element Js.t
-
-(* Cache of group selections *)
-module GroupCache = Map.Make(struct
-  type t = G.grouping_spec
-  let compare = compare
-end)
-
-(* Cached result of select_grouped *)
-type raw_group = Group.GroupList.t
-
-type ('results, 'root) state = {
-  filter: string;
-  current_check_box: check;
-  current_egroup: op; (* Egroup *)
-  cache: raw_group Lwt.t GroupCache.t;
-  hide_menubar: bool;
-  all_ops: op list;
-  check_boxes: check list;
-  tourney: T.tourney;
-  root: 'root;
-  results: 'results;
-  filter_box: Dom_html.inputElement Js.t;
-  upsets_only: bool;
-}
 
 (* There is Room for improvement here. Quotes are only parsed around
    an entire filter string. So something like "a","b" will not parse
@@ -168,7 +177,6 @@ type ('results, 'root) state = {
 	  Regexp.split commas filter
 
 let select_and_render state =
-  Jsutil.delete_children state.results;
   let positive = state.current_check_box in
   positive##checked <- Js._true;
   List.iter (fun negative -> negative##checked <- Js._false)
@@ -190,7 +198,7 @@ let select_and_render state =
 	  let num_rounds = T.num_rounds state.tourney in
 	  let groups' = refine_groups num_rounds groups espec filter state.upsets_only in
 	  Lwt.return (
-		render_groups state.results groups';
+		render_groups state groups';
 	  );
   | _ -> failwith "BUG: get_espec"
 
@@ -275,8 +283,7 @@ let build_ui container chosen_specs
     filters_requested tourney
     hide_menubar =
   let root =  Dom_html.createDiv doc in
-  let results = Dom_html.createTable doc in
-  results##className <- (Js.string "tournabox-results");
+  let results = create_results_table () in
   let menu = Dom_html.createDiv doc in
   let menu_wrapper = Dom_html.createDiv doc in
   let add_menu elt = dom_add ~parent:menu elt in
