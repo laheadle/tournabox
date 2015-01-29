@@ -47,7 +47,8 @@ let add_row_to_group (_, lst) row =
   lst := !lst @ [row]
 
 
-let refine_groups num_rounds groups grouping_spec filter upsets_only =
+let refine_groups num_rounds groups (grouping_spec: G.grouping_spec)
+	filter upsets_only =
   let results = make_groups () in
   let num_groups = G.GroupList.length groups in
   let do_group groupi group =

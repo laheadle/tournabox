@@ -26,22 +26,27 @@ end
 
 module Group: GROUP = struct
 
-  type t = contest list
-  let make () = []
-  let make_one c = [c]
-  let iteri = List.iteri
-  let length = List.length
-  let contains = List.exists
-  let add contest group = contest :: group
-  let first = function a :: _ -> Some a | _ -> None
-  let sort = List.sort
+  type t = contest Js.js_array Js.t
+  let make () : t = jsnew Js.array_empty ()
+  let iteri f (g: t) = g##forEach (fun contest i _ ->
+	f i contest)
+  let length (g: t) = g##length
+  let contains f (g: t) = g##some (fun contest _ _ ->
+	f contest |> Js.bool) |> Js.to_bool
+  let add contest (g: t) = ignore(g##push(contest)); g
+  let first (g: t) = Js.array_get g 0 |> Js.Optdef.to_option
+  let sort f (g: t) =
+	g##sort (Js.wrap_callback
+			   (fun x y ->
+				 (float_of_int (f x y))))
+  let make_one (c: contest) = add c (make ())
 
-  let compare_length_then_first g1 g2 =
-	let cmp = (compare (List.length g1)
-				 (List.length g2)) in
-	if cmp = 0 then (match g1, g2 with
-	  ({ C.entry_pair = a, _ ; winner=aw } :: _,
-	   { C.entry_pair = b, _ ; winner=bw } :: _) ->
+  let compare_length_then_first (g1: t) (g2: t) =
+	let cmp = (compare (g1##length)
+				 (g2##length)) in
+	if cmp = 0 then (match (first g1), (first g2) with
+	  (Some { C.entry_pair = a, _ ; winner=aw },
+	   Some { C.entry_pair = b, _ ; winner=bw }) ->
 		let awon = (aw = a) in
 		let bwon = (bw = b) in
 		if awon = bwon then
@@ -52,18 +57,18 @@ module Group: GROUP = struct
 	else
 	  cmp
 
-  let compare_first (contest: contest) group f =
+  let compare_first (contest: contest) (group: t) f =
 	(match contest with
 	  { C.entry_pair = (Some a), _ ; _ }
-	  -> (match group with
-		{ C.entry_pair = (Some b), _ } :: _ ->
+	  -> (match (first group) with
+		Some { C.entry_pair = (Some b), _ } ->
 		  (f a) = (f b)
 	  | _ -> failwith "Bad existing member")
 	| _ -> failwith "Bad contest for group")
 
-  let extract_first_first (lst: t) f =
-	match lst with
-	  contest :: tl -> 
+  let extract_first_first (g: t) f =
+	match (first g) with
+	  Some contest ->
 		f (C.first contest)
 	| _ -> failwith "Bad extract_first_first"
 
@@ -89,35 +94,50 @@ end
 
 module GroupList: GROUP_LIST = struct
   type t = {
-	mutable lst: Group.t list;
+	mutable raw: Group.t Js.js_array Js.t;
 	spec: grouping_spec;
   }
   let make spec = {
-	lst = [];
+	raw = jsnew Js.array_empty ();
 	spec = spec;
   }
 
   let add_contest contest groups =
-	let rec add_contest_iter contest lst =
-	  match lst with [] -> [Group.make_one contest]
-	  | hd :: tl -> 
-		let group_result = groups.spec#in_group contest hd in
-		if group_result.Ttypes.quit then lst
-		else
-		  if group_result.Ttypes.this_group then (Group.add contest hd) :: tl
-		  else
-			hd :: (add_contest_iter contest tl)
+	let raw = groups.raw in
+	let len = raw##length in
+	let push_new_group () = 
+	  ignore(raw##push(Group.make_one contest));
 	in
-	groups.lst <- add_contest_iter contest groups.lst
+	let rec add_contest_iter rawI =
+	  if rawI = len then push_new_group ()
+	  else
+		let group =
+		  Js.Optdef.get (Js.array_get raw rawI)
+			(fun () -> assert false)
+		in
+		let group_result = groups.spec#in_group contest group in
+		if group_result.Ttypes.quit then ()
+		else
+		  if group_result.Ttypes.this_group then
+			ignore(Group.add contest group)
+		  else
+			add_contest_iter (rawI + 1)
+	in
+	add_contest_iter 0
 
   let sort t =
-	t.lst <- List.sort
-	  t.spec#compare_group
-	  (List.map (Group.sort t.spec#compare_contest) t.lst);
+	t.raw <- (t.raw##map
+				(fun g _ _ ->
+				  Group.sort t.spec#compare_contest g));
+	ignore(t.raw##sort
+			 (Js.wrap_callback
+				(fun x y ->
+				  (float_of_int (t.spec#compare_group x y)))));
 	t
 
-  let iteri f (groups: t) = List.iteri f groups.lst
-  let length (groups: t) = List.length groups.lst
+  let iteri f (groups: t) = groups.raw##forEach (fun group i _ ->
+	f i group)
+  let length (groups: t) = groups.raw##length
 
 end
 
