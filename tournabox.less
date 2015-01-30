@@ -15,6 +15,15 @@
 		color: @color-f;
 		font-family: Arial, Sans Serif;
 
+		/* Die Bootstrap, Die! */
+		& * {
+			box-sizing: content-box;
+		}
+
+		&:before, &:after {
+			box-sizing: content-box;
+		}
+
 		.tournabox-brand {
 			text-align: right;
 			padding: 6px;
@@ -32,7 +41,13 @@
 
 		.tournabox-menu {
 			background-color: @color-a;
-			span {
+
+			.tournabox-filter-span {
+				display: block;
+				padding: 6px;
+			} 
+
+			.tournabox-menu-checkspan {
 				display: inline-block;
 				padding: 6px;
 			} 
@@ -52,6 +67,11 @@
 				table-layout: fixed;
 				width: 100%;
 			}
+
+			@media (min-width:900px) {
+				min-width: 600px;
+			}
+
 			border-spacing: 0px;
 			overflow: auto;
 			padding: 4px;

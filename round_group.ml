@@ -28,7 +28,6 @@ let o =
   (object
 	method name = "By Round"
 	method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	  let len = G.Group.length lst in
 	  let unplayed = num_rounds - num_groups in
 	  let this_round = unplayed + round in
 	  let header_str =
@@ -37,9 +36,8 @@ let o =
 		| 1 -> "Semifinals"
 		| 2 -> "Quarterfinals"
 		| _ -> (Printf.sprintf
-				  "Round %d (%d completed)"
-				  (num_rounds - this_round)
-				  len)
+				  "Round %d"
+				  (num_rounds - this_round))
 	  in
 	  { Ttypes.header =
 		  Columns.as_header

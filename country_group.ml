@@ -22,7 +22,7 @@ let o = let open Entry in object
 	  contest |> C.first |> fetch in
 	let player contest =
 	  contest |> C.first |> fetch |> (fun c -> c.player) in
-	compare_seeds (entry c1) (entry c2) (fun () ->
+	compare_seeds (entry c1) (entry c2) ~if_none: (fun () ->
 	  compare (player c1) (player c2) )
 
   method compare_group =  fun g1 g2 -> -(G.Group.compare_length_then_first g1 g2)

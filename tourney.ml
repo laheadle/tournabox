@@ -232,7 +232,7 @@ let select_grouped group_spec tourney =
   let add_non_bye = function
 	| { C.entry_pair = (Some k, _) } as icontest ->
 	  if not (is_bye tourney k) then begin
-		Tlog.debugf ~section:Tlog.playing "Add %d" k;
+		Tlog.debugf ~section:Tlog.grouping "Add %d" k;
 		GroupList.add_contest
 		  (convert icontest)
 		  groups
@@ -244,9 +244,9 @@ let select_grouped group_spec tourney =
 	for i = 0 to num_contests round - 1 do
 	  match get_contest round i with
 		{ C.entry_pair = (Some k, Some j) } as icontest ->
-		   add_non_bye icontest;
+		  add_non_bye icontest;
 		  (* Make sure the reference entry comes first *)
-			add_non_bye { icontest with C.entry_pair = ( Some j, Some k ) };
+		  add_non_bye { icontest with C.entry_pair = ( Some j, Some k ) };
 	  | { C.entry_pair = (None, Some k) } as icontest ->
 		add_non_bye { icontest with C.entry_pair = ( Some k, None ) };
 	  | { C.entry_pair = (Some k, None) } as icontest ->
