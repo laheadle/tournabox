@@ -2,25 +2,25 @@
 (** A contest is a decision point in a tournament, when one of two
 	contestants is eliminated from the tournament, and the other one moves
 	on to the next round (or wins the tournament). *)
-type 'a t = {
+type 'contestant t = {
 
-  (** The round during which the contest took place (zero-indexed). *)
   round : int;
+  (** The round during which the contest took place (zero-indexed). *)
 
+  position : int;
   (** At what position in the round (zero-indexed). There are as many
 	  positions as contests in a round, and twice as many contestants
 	  as positions in a round. *)
-  position : int;
 
+  entry_pair : 'contestant option * 'contestant option;
   (** The contending contestants *)
-  entry_pair : 'a option * 'a option;
 
+  winner : 'contestant option;
   (** The winner of the contest, or None if not completed. *)
-  winner : 'a option;
 }
 
 (** The first contestant *)
-val first : 'a t -> 'a
+val first : 'contestant t -> 'contestant
 
 (** 
 	Conversion to a different type of contestant.
@@ -38,4 +38,4 @@ val first : 'a t -> 'a
 	The Entry.slot representation is used for printing and sorting of
 	results.
 *)
-val map : ('a -> 'b) -> 'a t -> 'b t
+val map : ('contestant -> 'b) -> 'contestant t -> 'b t

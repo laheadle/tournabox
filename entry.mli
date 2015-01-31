@@ -5,7 +5,7 @@ type t = { player: string; country: string option; seed: int option }
 
 val to_string: t -> string
 
-(** A slot in the tournament. May be a player or a bye slot, which
+(** A slot in the tournament. May be a Somebody or a Bye slot, which
 	always loses. *)
 type slot = Bye | Somebody of t
 

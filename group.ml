@@ -17,7 +17,7 @@ module type GROUP = sig
 	  win/loss results. *)
   val compare_length_then_first : t ->  t -> int
 
-  val compare_first : contest -> t -> (Entry.slot -> 'a) -> bool
+  val match_first : contest -> t -> (Entry.slot -> 'a) -> bool
 	
   val extract_first_first : t -> (Entry.slot -> 'a) -> 'a
 
@@ -57,14 +57,10 @@ module Group: GROUP = struct
 	else
 	  cmp
 
-  let compare_first (contest: contest) (group: t) f =
-	(match contest with
-	  { C.entry_pair = (Some a), _ ; _ }
-	  -> (match (first group) with
-		Some { C.entry_pair = (Some b), _ } ->
-		  (f a) = (f b)
-	  | _ -> failwith "Bad existing member")
-	| _ -> failwith "Bad contest for group")
+  let match_first (contest: contest) (group: t) f =
+	contest |> C.first |> f
+	=
+	(group |> first |> Util.get_option |> C.first |> f)
 
   let extract_first_first (g: t) f =
 	match (first g) with

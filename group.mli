@@ -16,10 +16,24 @@ module type GROUP = sig
 	  win/loss results. *)
   val compare_length_then_first : t ->  t -> int
 
-  val compare_first : contest -> t -> (Entry.slot -> 'a) -> bool
+  (** This is for determining whether a contest belongs in a group at
+	  all. It checks the first contestant of the contest against the
+	  first contestant of the first contest in the group. The function
+	  argument is applied to both contestants, and the results are
+	  tested with '='. *)
+  val match_first : contest -> t -> (Entry.slot -> 'a) -> bool
 
+  (** 
+	  This is for extracting Group headers. For example, the header
+	  of a group in the `By Country' Grouping is the name of the
+	  country.
+
+	  [extract_first_first group f] calls f on the first (slot)
+	  contestant of the first contest in group, and returns what f
+	  returns.  *)
   val extract_first_first : t -> (Entry.slot -> 'a) -> 'a
 
+  (** Sort a group with a sorting function *)
   val sort: (contest -> contest -> int) -> t -> t
 end
 

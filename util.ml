@@ -1,4 +1,6 @@
 
+let get_option = function None -> assert false | Some x -> x
+
 let map_option f =
   function None -> None
   | Some x -> Some (f x)

@@ -3,18 +3,19 @@ module G = Group
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 let o = let open Entry in object
-  method header_spec ~num_rounds ~num_groups ~pos:round lst =
-	let header =  G.Group.extract_first_first lst
-		(fun p ->
-		  let p = fetch p in
-		  match p.country with None -> assert false
-		  | Some c ->
-			try
-			  let country = List.assoc c Countries.codes in
-			  country
-			with _ -> c)
+  method header_spec ~num_rounds ~num_groups ~pos:round group =
+	let get_country entry =
+	  let entry = fetch entry in
+	  match entry.country with None -> assert false
+	  | Some c ->
+		try
+		  let country = List.assoc c Countries.codes in
+		  country
+		with _ -> c
 	in
-	{ Ttypes.header = Columns.(as_header (just_country header));
+	let country =  G.Group.extract_first_first group get_country
+	in
+	{ Ttypes.header = Columns.(as_header (just_country country));
 	  should_filter_header = true; }
   method name = "By Country";
   method compare_contest c1 c2 =
@@ -28,7 +29,7 @@ let o = let open Entry in object
   method compare_group =  fun g1 g2 -> -(G.Group.compare_length_then_first g1 g2)
   method in_group contest group = {
 	Ttypes.quit = false;
-	this_group = G.Group.compare_first contest group (fun p ->
+	this_group = G.Group.match_first contest group (fun p ->
 	  let p = fetch p in p.country)
   }
   method column_extractor num pos contest =

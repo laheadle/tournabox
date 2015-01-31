@@ -5,8 +5,8 @@ open Entry
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
 class ['a] parent = object
-  method header_spec ~(num_rounds: int) ~(num_groups: int) ~(pos: int) lst =
-	let header = G.Group.extract_first_first lst fetch in
+  method header_spec ~(num_rounds: int) ~(num_groups: int) ~(pos: int) group =
+	let header = G.Group.extract_first_first group fetch in
 	{ Ttypes.header = Columns.(as_header (entry header));
 	  should_filter_header = true; }
   method compare_contest (c1: slot C.t) (c2: slot C.t) = -(compare c1.C.round c2.C.round)
@@ -63,8 +63,8 @@ class seed_group = object
 	| _ -> failwith "bad group compare")
   method in_group contest group = {
 	Ttypes.quit = false;
-	this_group = G.Group.compare_first contest group
-	  (function | Somebody e -> e.seed, to_string e | Bye -> assert false);
+	this_group = G.Group.match_first contest group
+	  (fun e -> let e' = fetch e in e'.seed, to_string e')
   }
   end
 
