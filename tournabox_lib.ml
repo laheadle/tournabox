@@ -405,13 +405,9 @@ let play { entries; outcomes; chosen_specs;
   in
   ignore(enter_main_loop state)
 
-
 let chosen_specs groups_requested =
-  let all = [
-	Round_group.o;
-	new Player_groups.performance_group;
-	Country_group.o;
-	new Player_groups.seed_group;
+  let all = let open Grouping_specs in [
+	round; performance; country; seed
   ]
   in
   let matches a b = (String.lowercase a) = (String.lowercase b) in
