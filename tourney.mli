@@ -1,11 +1,16 @@
+
+(** The fundamental type of a tournament *)
 type tourney
-open Group
 
-val init : Entry.slot list -> tourney
+(** Make a tournament from some entries. *)
+val make : Entry.slot list -> tourney
 
+(** Record a winner. *)
 val won : tourney -> string -> tourney
 
-val select_grouped : grouping_spec -> tourney -> GroupList.t
+(** Group the results. *)
+val select_grouped : Group.grouping_spec -> tourney -> Group.GroupList.t
 
+(** Get the number of rounds in a tournament. *)
 val num_rounds : tourney -> int
 

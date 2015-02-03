@@ -10,18 +10,14 @@ module type GROUP = sig
   val length: t -> int
   val contains: (contest -> bool) -> t -> bool
   val first: t -> contest option
-  val add: contest -> t -> t
-  (** This is for sorting groups. First, compare their lengths. Then
-	  look at the first player in each first contest. If they both won
-	  or both lost, compare the contestants. Otherwise compare the
-	  win/loss results. *)
+  val add: contest -> t -> unit
   val compare_length_then_first : t ->  t -> int
 
   val match_first : contest -> t -> (Entry.slot -> 'a) -> bool
 	
   val extract_first_first : t -> (Entry.slot -> 'a) -> 'a
 
-  val sort: (contest -> contest -> int) -> t -> t
+  val sort: (contest -> contest -> int) -> t -> unit
 end
 
 module Group: GROUP = struct
@@ -33,14 +29,12 @@ module Group: GROUP = struct
   let length (g: t) = g##length
   let contains f (g: t) = g##some (fun contest _ _ ->
 	f contest |> Js.bool) |> Js.to_bool
-  let add contest (g: t) = ignore(g##push(contest)); g
+  let add contest (g: t) = ignore(g##push(contest))
   let first (g: t) = Js.array_get g 0 |> Js.Optdef.to_option
   let sort f (g: t) =
-	g##sort (Js.wrap_callback
-			   (fun x y ->
-				 (float_of_int (f x y))))
-  let make_one (c: contest) = add c (make ())
-
+	ignore(g##sort (Js.wrap_callback
+					  (fun x y -> f x y |> float_of_int)))
+  let make_one (c: contest) = let g = make () in add c g; g
   let compare_length_then_first (g1: t) (g2: t) =
 	let cmp = (compare (g1##length)
 				 (g2##length)) in
@@ -70,20 +64,25 @@ module Group: GROUP = struct
 
 end
 
+type group_result =  {
+  quit: bool;
+  this_group: bool;
+}
+
 class type grouping_spec = object
   method name:string
-  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> Group.t -> Ttypes.header_spec
+  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> Group.t -> Columns.header_spec
   method compare_contest: contest -> contest -> int
   method compare_group: Group.t -> Group.t -> int
-  method in_group: contest -> Group.t -> Ttypes.group_result
-  method column_extractor: int -> int -> contest -> Ttypes.column list
+  method in_group: contest -> Group.t -> group_result
+  method column_extractor: num_contests:int -> index:int -> contest -> Columns.column list
 end
 
 module type GROUP_LIST = sig
   type t
   val make: grouping_spec -> t 
   val add_contest: contest -> t -> unit
-  val sort: t -> t
+  val sort: t -> unit
   val iteri: (int -> Group.t -> unit) -> t -> unit
   val length: t -> int
 end
@@ -112,27 +111,28 @@ module GroupList: GROUP_LIST = struct
 			(fun () -> assert false)
 		in
 		let group_result = groups.spec#in_group contest group in
-		if group_result.Ttypes.quit then ()
+		if group_result.quit then ()
 		else
-		  if group_result.Ttypes.this_group then
-			ignore(Group.add contest group)
+		  if group_result.this_group then
+			Group.add contest group
 		  else
 			add_contest_iter (rawI + 1)
 	in
 	add_contest_iter 0
 
+  let iteri f (groups: t) = groups.raw##forEach (fun group i _ ->
+	f i group)
+
   let sort t =
-	t.raw <- (t.raw##map
-				(fun g _ _ ->
-				  Group.sort t.spec#compare_contest g));
+	iteri
+	  (fun i g -> Group.sort t.spec#compare_contest g)
+	  t;
+
 	ignore(t.raw##sort
 			 (Js.wrap_callback
 				(fun x y ->
-				  (float_of_int (t.spec#compare_group x y)))));
-	t
+				  (float_of_int (t.spec#compare_group x y)))))
 
-  let iteri f (groups: t) = groups.raw##forEach (fun group i _ ->
-	f i group)
   let length (groups: t) = groups.raw##length
 
 end

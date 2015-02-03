@@ -1,12 +1,15 @@
 
 project=tournabox
+pkgs=-pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
+ocamlbuild_flags=-cflag -annot -use-ocamlfind
+JSO_FLAGS := +weak.js
 
 ifeq ($(debug),)
-FLAGS :=  -cflag -annot -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
-JSO_FLAGS := +weak.js
+FLAGS :=  $(ocamlbuild_flags) $(pkgs)
 else
-FLAGS :=  -lflag -g -cflag -annot -cflag -g -use-ocamlfind -pkgs js_of_ocaml.log,js_of_ocaml,js_of_ocaml.syntax -syntax camlp4o
-JSO_FLAGS := +weak.js --enable excwrap --debuginfo --pretty --noinline
+# e.g. `make debug=1 dev'
+FLAGS :=  $(ocamlbuild_flags) -lflag -g -cflag -g $(pkgs)
+JSO_FLAGS += --enable excwrap --debuginfo --pretty --noinline
 endif
 
 TESTING_FLAGS := -pkgs ojasmine

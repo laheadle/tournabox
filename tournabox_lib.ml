@@ -19,14 +19,14 @@ let or_filter_matches or_filter str =
 
 let dom_add ~parent child = Dom.appendChild parent child
 
-let add_td row { Ttypes.class_name; content } =
+let add_td row { Columns.class_name; content } =
   let td = Dom_html.createTd Jsutil.doc in
   Jsutil.set_classname td class_name;
   
   let add_fragment = function
-	| Ttypes.Text txt ->
+	| Columns.Text txt ->
 	  Dom.appendChild td (Jsutil.textNode txt);
-	| Ttypes.Elt {Ttypes.class_name;text} ->
+	| Columns.Elt {Columns.class_name;text} ->
 	  let elt = Dom_html.createSpan Jsutil.doc in
 	  Dom.appendChild elt (Jsutil.textNode text);
 	  elt##className <- (Js.string class_name);
@@ -53,25 +53,25 @@ let refine_groups num_rounds groups (grouping_spec: G.grouping_spec)
   let num_groups = G.GroupList.length groups in
   let do_group groupi group =
 	let num_contests = G.Group.length group in
-	let { Ttypes.header; should_filter_header } =
+	let { Columns.header; should_filter_header } =
 	  grouping_spec#header_spec ~num_rounds ~num_groups ~pos:groupi group in
 	let group' = (header, ref []) in
 	let has_matches = ref false in
-	let do_contest i contest =
+	let do_contest index contest =
 	  let row =
-		grouping_spec#column_extractor num_contests i contest in
+		grouping_spec#column_extractor ~num_contests ~index contest in
 	  let matches =
 		List.exists
-		  (fun { Ttypes.content;
+		  (fun { Columns.content;
 				 should_filter;
 				 class_name = _ } -> 
-			let content = Ttypes.column_content_string content in
-			let header_content = Ttypes.(column_content_string header.content) in
+			let content = Columns.column_content_string content in
+			let header_content = Columns.(column_content_string header.content) in
 			(should_filter_header && (or_filter_matches filter header_content)) ||
 			  (should_filter && or_filter_matches filter content))
 		  row in
  	  if matches &&
-		(not upsets_only) || (upsets_only && Ttypes.is_upset row) then begin
+		(not upsets_only) || (upsets_only && Columns.is_upset row) then begin
 		has_matches := true;
 		add_row_to_group group' row
 	  end
@@ -392,7 +392,7 @@ let play { entries; outcomes; chosen_specs;
   Tlog.noticef ~section:Tlog.input "Play in container: %s"
 	(Js.to_string container##outerHTML);
   let (entries, outcomes) = cleanup_strings () in
-  let tourney = T.init entries in
+  let tourney = T.make entries in
   Tlog.noticef ~section:Tlog.input "initialized\n";
 	(* let now1 = jsnew Js.date_now () in *)
   let current_state = List.fold_left T.won tourney outcomes in

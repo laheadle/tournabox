@@ -35,7 +35,7 @@ let getAttribute_exn node attr =
 exception Not_text
 exception No_children
 
-let first_child node =
+let first_child (node: #Dom.node Js.t) =
   Js.Opt.get (node##childNodes##item(0)) (fun () -> raise No_children)
 
 let child_elements node =

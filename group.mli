@@ -1,14 +1,37 @@
+(** This module contains types and functions for grouping, sorting,
+	and rendering contests. *)
+
+(** An alias for the type of contests that are grouped. *)
 type contest = Entry.slot Contest.t
 
+(** This module type encapsulates types and functions for working with
+	groups of contests *)
 module type GROUP = sig
+
+  (** The basic grouping unit of Tournabox. An ordered collection of
+	  contests *)
   type t
+
+  (** Create a new group *)
   val make: unit -> t
+
+  (** Create a group containing one contest *)
   val make_one: contest -> t
+
+  (** [iteri f g] runs f on each contest in g *)
   val iteri: (int -> contest -> unit) -> t -> unit
+
+  (** Get the length of a group *)
   val length: t -> int
+
+  (** [contains f g] yields true if g contains a contest matching f *)
   val contains: (contest -> bool) -> t -> bool
+
+  (** Get the first contest of a group, if there is one. *)
   val first: t -> contest option
-  val add: contest -> t -> t
+
+  (** Add a contest to a group. *)
+  val add: contest -> t -> unit
 
   (** This is for sorting groups. First, compare their lengths. Then
 	  look at the first player in each first contest. If they both won
@@ -34,26 +57,85 @@ module type GROUP = sig
   val extract_first_first : t -> (Entry.slot -> 'a) -> 'a
 
   (** Sort a group with a sorting function *)
-  val sort: (contest -> contest -> int) -> t -> t
+  val sort: (contest -> contest -> int) -> t -> unit
 end
 
 module Group: GROUP
 
+(** Return value of grouping_spec#{! Group.in_group} *)
+type group_result =  {
+  quit: bool;
+  this_group: bool;
+}
+
+(** {b This is one of the central abstractions of Tournabox.} A
+	grouping_spec is a way of grouping and presenting an ordered
+	collection of groups of contests *)
 class type grouping_spec = object
+
+  (** The name of the grouping_spec. A legal value of the
+	  tournabox-groups container attribue. *)
   method name:string
-  method header_spec: num_rounds:int -> num_groups:int -> pos:int -> Group.t -> Ttypes.header_spec
+
+  (** Returns a {! Columns.header_spec} to specify how to display the header of a
+	  group. Most of the parameters are only used by `By Round' to
+	  calculate the round number displayed.
+
+	  Given the total number of rounds in the tournabox upon
+	  completion; the number of groups in the {! Group.GroupList}
+	  (i.e. the number of rounds played so far), the index of the
+	  group in the group list {! Group.GroupList} (i.e. the round); and
+	  the group in need of a header.
+
+	  All of the grouping_specs except `By Round' simply look at the
+	  first contest in the group, and pull out a prominent field like
+	  name or country.  *)
+  method header_spec: num_rounds:int -> num_groups:int -> pos:int
+	-> Group.t -> Columns.header_spec
+
+  (** Compares two contests for the purposes of sorting them within a
+	  group. *)
   method compare_contest: contest -> contest -> int
+
+  (** Compares two groups for the purposes of sorting them within a
+	  GroupList. *)
   method compare_group: Group.t -> Group.t -> int
-  method in_group: contest -> Group.t -> Ttypes.group_result
-  method column_extractor: int -> int -> contest -> Ttypes.column list
+
+  (** Returns whether a contest is in a group. If the return value has
+	  {! group_result.quit} = true, then give up: stop trying
+	  to find a group to put the contest in. *)
+  method in_group: contest -> Group.t -> group_result
+
+  (** Returns the columns to render for a contest. Given the number
+	  of contests in the group; the index of the column in the
+	  group; and the contest. *)
+  method column_extractor: num_contests:int -> index:int
+	-> contest -> Columns.column list
 end
 
+
+(** This module type specifies types and functions for working with
+	ordered collections of groups of contests. Tournabox displays one
+	of them at any given time *)
+
 module type GROUP_LIST = sig
+
+  (** An ordered collection of groups of contests. *)
   type t
+
+  (** Creation *)
   val make: grouping_spec -> t 
+
+  (** Add a contest to a collection *)
   val add_contest: contest -> t -> unit
-  val sort: t -> t
+
+  (** Sort it. *)
+  val sort: t -> unit
+
+  (** Iterate over the groups. *)
   val iteri: (int -> Group.t -> unit) -> t -> unit
+
+  (** Get the length. *)
   val length: t -> int
 end
 

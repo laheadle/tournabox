@@ -17,7 +17,7 @@ object
 	in
 	let country =  G.Group.extract_first_first group get_country
 	in
-	{ Ttypes.header = Columns.(as_header (just_country country));
+	{ Columns.header = Columns.(as_header (just_country country));
 	  should_filter_header = true; }
   method name = "By Country";
   method compare_contest c1 c2 =
@@ -30,11 +30,11 @@ object
 
   method compare_group =  fun g1 g2 -> -(G.Group.compare_length_then_first g1 g2)
   method in_group contest group = {
-	Ttypes.quit = false;
+	Group.quit = false;
 	this_group = G.Group.match_first contest group (fun p ->
 	  let p = fetch p in p.country)
   }
-  method column_extractor num pos contest =
+  method column_extractor ~num_contests ~index contest =
 	let open Columns in
 	let columns =
 	  match contest with
@@ -108,7 +108,7 @@ let round =
 				  "Round %d"
 				  (num_rounds - this_round))
 	  in
-	  { Ttypes.header =
+	  { Columns.header =
 		  Columns.as_header
 			(Columns.plain ~should_filter:false header_str);
 		should_filter_header = false }
@@ -120,10 +120,10 @@ let round =
 			(contest.C.round = r1), (contains_contest_player group contest)
 		| _ -> failwith "BUG: Invalid group, by round" in
 	  {
-		Ttypes.quit = round_matches && already;
+		Group.quit = round_matches && already;
 		this_group = round_matches && not already
 	  }
-	method column_extractor num pos contest =
+	method column_extractor ~num_contests ~index contest =
 	  let open Columns in
 	  let columns = match contest with
 		| { C.entry_pair = Some (Somebody a),
@@ -156,12 +156,12 @@ let round =
 class ['a] player_group = object
   method header_spec ~(num_rounds: int) ~(num_groups: int) ~(pos: int) group =
 	let header = G.Group.extract_first_first group fetch in
-	{ Ttypes.header = Columns.(as_header (entry header));
+	{ Columns.header = Columns.(as_header (entry header));
 	  should_filter_header = true; }
   method compare_contest (c1: slot C.t) (c2: slot C.t) = -(compare c1.C.round c2.C.round)
-  method column_extractor num pos contest =
+  method column_extractor ~num_contests ~index contest =
 	let open Columns in
-	let in_round = in_round (num - pos) in
+	let in_round = in_round (num_contests - index) in
 	let columns =
 	  match contest with
 	  | { C.entry_pair = Some _, Some Bye; winner = _ } ->
@@ -211,7 +211,7 @@ class seed_group = object
 		  else cmp)
 	| _ -> failwith "bad group compare")
   method in_group contest group = {
-	Ttypes.quit = false;
+	Group.quit = false;
 	this_group = G.Group.match_first contest group
 	  (fun e -> let e' = fetch e in e'.seed, to_string e')
   }
@@ -223,7 +223,7 @@ class performance_group = object
 	method compare_group g1 g2 =
 	  -(G.Group.compare_length_then_first g1 g2)
 	method in_group contest group = {
-	  Ttypes.quit = false;
+	  Group.quit = false;
 	  this_group =
 		(match contest with
 		  { C.entry_pair = (Some (Somebody a)), _ ; _ }

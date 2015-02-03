@@ -130,7 +130,7 @@ let rec won_impl tourney index =
 
 (* The first round is initialized with full icontests; other rounds are
    initialized with empty icontests *)
-let init entries_list =
+let make entries_list =
   let open Entry in
   let len = List.length entries_list in
   let num_rounds = log_2 len in
@@ -255,3 +255,4 @@ let select_grouped group_spec tourney =
 	done
   done;
   GroupList.sort groups;
+  groups;
