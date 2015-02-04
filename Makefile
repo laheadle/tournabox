@@ -29,11 +29,16 @@ dev: checkTestDir install
 	cp `ocamlfind query $(project)`/$(project).js $(TOURNABOX_TESTDIR)
 	cp ./tst.html $(TOURNABOX_TESTDIR)
 
-install: uninstall js
+install: uninstall js doc
 	ocamlfind install $(project) META $(project).js $(project).css $(project).less
+	mkdir -p `ocamlfind query $(project)`/../../doc/$(project)
+	cp -r _build/$(project).docdir `ocamlfind query $(project)`/../../doc/$(project)
 
 uninstall:
-	ocamlfind remove $(project)
+	if ocamlfind query $(project) ; then \
+		rm -rf `ocamlfind query $(project)`/../../doc/$(project) ; \
+		ocamlfind remove $(project) ; \
+	fi
 
 testSuite: checkTestDir
 	ocamlbuild $(FLAGS) $(TESTING_FLAGS) test_tournabox.byte

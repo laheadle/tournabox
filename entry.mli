@@ -1,3 +1,4 @@
+(** Each Entry in a tournament takes up a slot. *)
 
 (** An entry who may win or lose against another Entry.t, but always
 	beats a bye. *)

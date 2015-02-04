@@ -4,3 +4,4 @@ _build
 *.js
 *.css
 tests/.stog/cache/*
+tournabox.docdir

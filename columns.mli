@@ -1,6 +1,6 @@
 (**
 
-   Columns, the basic units of visual information in a tournabox UI,
+   The basic units of visual information in a tournabox UI.  Columns
    are short lists of textual fragments, each element of which may
    have css classes. This allows us to do things like style the number
    "6" in the column "in round 6."

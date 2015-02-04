@@ -1,5 +1,6 @@
-(** These are the supported !Group.grouping_spec objects. Each
-	tournabox has one or more of them, depending on the value of the
+(** The supported {! Group.grouping_spec} objects.
+
+	Each tournabox has one or more of them, depending on the value of the
 	tournabox-groups container attribute.
 
 	performance and seed are "player groups," meaning their headers

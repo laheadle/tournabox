@@ -1,5 +1,5 @@
-(** This module contains types and functions for grouping, sorting,
-	and rendering contests. *)
+(** Types and functions for grouping, sorting, and rendering
+	contests. *)
 
 (** An alias for the type of contests that are grouped. *)
 type contest = Entry.slot Contest.t
@@ -62,19 +62,19 @@ end
 
 module Group: GROUP
 
-(** Return value of grouping_spec#{! Group.in_group} *)
+(** Return value of {! Group.grouping_spec.in_group} *)
 type group_result =  {
   quit: bool;
   this_group: bool;
 }
 
-(** {b This is one of the central abstractions of Tournabox.} A
-	grouping_spec is a way of grouping and presenting an ordered
-	collection of groups of contests *)
+(** A way of grouping and presenting an ordered collection of groups
+	of contests.
+	{b This is one of the central abstractions of Tournabox.} *)
 class type grouping_spec = object
 
   (** The name of the grouping_spec. A legal value of the
-	  tournabox-groups container attribue. *)
+	  comma-separated tournabox-groups container attribue. *)
   method name:string
 
   (** Returns a {! Columns.header_spec} to specify how to display the header of a
@@ -84,10 +84,10 @@ class type grouping_spec = object
 	  Given the total number of rounds in the tournabox upon
 	  completion; the number of groups in the {! Group.GroupList}
 	  (i.e. the number of rounds played so far), the index of the
-	  group in the group list {! Group.GroupList} (i.e. the round); and
+	  group in the {! Group.GroupList} (i.e. the round); and
 	  the group in need of a header.
 
-	  All of the grouping_specs except `By Round' simply look at the
+	  All of the grouping_specs except {! Grouping_specs.round} simply look at the
 	  first contest in the group, and pull out a prominent field like
 	  name or country.  *)
   method header_spec: num_rounds:int -> num_groups:int -> pos:int
@@ -107,7 +107,7 @@ class type grouping_spec = object
   method in_group: contest -> Group.t -> group_result
 
   (** Returns the columns to render for a contest. Given the number
-	  of contests in the group; the index of the column in the
+	  of contests in the group; the index of the contest in the
 	  group; and the contest. *)
   method column_extractor: num_contests:int -> index:int
 	-> contest -> Columns.column list

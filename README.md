@@ -8,6 +8,8 @@ code is client-side; no server-side programming is needed.
 
 See [the Demo](http://laheadle.github.io/docs-tournabox/stable).
 
+Browse [the OcamlDoc](http://laheadle.github.io/docs-tournabox/unstable/tournabox.docdir).
+
 ## Features
 
 Supports any sport or game.
