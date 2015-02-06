@@ -2,6 +2,22 @@ module C = Contest
 module G = Group
 open Entry
 
+
+let first_entry contest =
+  let (first, _) = contest.C.entry_pair in
+  assert (Util.is_some first);
+  let slot = Util.get_option first in
+  assert (Entry.is_t slot);
+  match slot with
+	Somebody a -> a
+  | _ -> assert false
+
+let second_slot contest = 
+  snd contest.C.entry_pair
+
+let winner_slot contest =
+  contest.C.winner
+
 let country =
 object
   (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
@@ -34,33 +50,31 @@ object
 	this_group = G.Group.match_first contest group (fun p ->
 	  let p = fetch p in p.country)
   }
-  method column_extractor ~num_contests ~index contest =
+  method extract_columns ~num_contests ~index contest =
 	let open Columns in
+	let a = first_entry contest in
+	let round = contest.C.round in
 	let columns =
-	  match contest with
-	   { C.entry_pair = Some (Somebody a),
-		  Some Bye; winner = _; round } ->
-		[ entry a;
-		  advanced;
-		  with_a_bye;
-		  in_round (round + 1)]
-	  | { C.entry_pair = Some (Somebody a),
-		  Some (Somebody b); winner = Some (Somebody c); round } ->
-		let winner, loser = if c = a then a, b else b,a in
+	  match (second_slot contest, winner_slot contest) with
+		(Some Bye, _) ->
+		  [ entry a;
+			advanced;
+			with_a_bye;
+			in_round (round + 1)]
+	  | (Some (Somebody b), Some (Somebody c)) ->
+		let winner, loser = if c = a then a, b else b, a in
 		let outcome = if c = a then defeated ~winner loser else
 			was_defeated_by ~winner loser in
 		[ entry a;
 		  outcome;
 		  entry ~filterable:false b;
 		  in_round (round + 1)]
-	  | { C.entry_pair = Some (Somebody a),
-		  Some (Somebody b); winner = None ; round } ->
+	  | (Some (Somebody b), None) ->
 		[  entry a;
 		   will_face;
 		   entry ~filterable:false b;
-		  in_round (round + 1)]
-	  | { C.entry_pair = Some (Somebody a), None;
-		  winner = None ; round } ->
+		   in_round (round + 1)]
+	  | (None, None) ->
 		[
 		  entry a;
 		  will_face;
@@ -123,27 +137,25 @@ let round =
 		Group.quit = round_matches && already;
 		this_group = round_matches && not already
 	  }
-	method column_extractor ~num_contests ~index contest =
+	method extract_columns ~num_contests ~index contest =
 	  let open Columns in
-	  let columns = match contest with
-		| { C.entry_pair = Some (Somebody a),
-			Some Bye; winner = _ } -> [
-		  entry a;
-		  advanced;
-		  with_a_bye
-		]
-		| { C.entry_pair = Some (Somebody a),
-			Some (Somebody b); winner = Some (Somebody c) } ->
+	  let a = first_entry contest in
+	  let columns =
+		match (second_slot contest, winner_slot contest) with
+		| Some Bye, _ ->
+		  [ entry a;
+			advanced;
+			with_a_bye ]
+		| Some (Somebody b), Some (Somebody c) ->
 		  let winner, loser = if c = a then a, b else b, a in
 		  [ entry c;
 			defeated ~winner loser;
 			entry loser ]
-		| { C.entry_pair = Some (Somebody a),
-			Some (Somebody b); winner = None } ->
+		| Some (Somebody b), None ->
 		  [ entry a;
 			will_face;
 			entry b; ]
-		| { C.entry_pair = Some (Somebody a), None; _ } ->
+		| (None, _) ->
 		  [ entry a;
 			will_face;
 			to_be_decided ]
@@ -159,33 +171,29 @@ class ['a] player_group = object
 	{ Columns.header = Columns.(as_header (entry header));
 	  should_filter_header = true; }
   method compare_contest (c1: slot C.t) (c2: slot C.t) = -(compare c1.C.round c2.C.round)
-  method column_extractor ~num_contests ~index contest =
+  method extract_columns ~num_contests ~index contest =
 	let open Columns in
 	let in_round = in_round (num_contests - index) in
+	let a = first_entry contest in
 	let columns =
-	  match contest with
-	  | { C.entry_pair = Some _, Some Bye; winner = _ } ->
+	  match (second_slot contest, winner_slot contest) with
+	  | Some Bye, _ ->
 		[  advanced;
 		   with_a_bye;
 		   in_round ]
-	  | { C.entry_pair =
-		  Some (Somebody a),
-		  Some (Somebody b);
-		  winner = Some (Somebody c) } ->
+	  | Some (Somebody b), Some (Somebody c) ->
 		let winner, loser = if c = a then a, b else b,a in
 		let outcome = if c = b then was_defeated_by ~winner loser 
 		  else defeated ~winner loser in
 		[ outcome;
 		  entry ~filterable:false b;
 		  in_round ]
-	  | { C.entry_pair = Some (Somebody a), Some (Somebody b);
-		  winner = None } ->
+	  | Some (Somebody b),  None ->
 		[
 		  will_face;
 		  entry ~filterable:false b;
 		  in_round ]
-	  | { C.entry_pair = Some (Somebody a),None;
-		  winner = None } ->
+	  | None, None ->
 		[
 		  will_face;
 		  to_be_decided;

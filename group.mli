@@ -109,7 +109,7 @@ class type grouping_spec = object
   (** Returns the columns to render for a contest. Given the number
 	  of contests in the group; the index of the contest in the
 	  group; and the contest. *)
-  method column_extractor: num_contests:int -> index:int
+  method extract_columns: num_contests:int -> index:int
 	-> contest -> Columns.column list
 end
 

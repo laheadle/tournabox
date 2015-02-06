@@ -8,6 +8,12 @@ val get_option : 'a option -> 'a
 (** map a function over an option *)
 val map_option : ('a -> 'b) -> 'a option -> 'b option
 
+(** Return true for Some x *)
+val is_some: 'a option -> bool
+
+(** Return true for None *)
+val is_none: 'a option -> bool
+
 (** [pow a b] returns a to the bth power *)
 val pow : int -> int -> int
 

@@ -75,7 +75,7 @@ class type grouping_spec = object
   method compare_contest: contest -> contest -> int
   method compare_group: Group.t -> Group.t -> int
   method in_group: contest -> Group.t -> group_result
-  method column_extractor: num_contests:int -> index:int -> contest -> Columns.column list
+  method extract_columns: num_contests:int -> index:int -> contest -> Columns.column list
 end
 
 module type GROUP_LIST = sig

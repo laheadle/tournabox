@@ -59,7 +59,7 @@ let refine_groups num_rounds groups (grouping_spec: G.grouping_spec)
 	let has_matches = ref false in
 	let do_contest index contest =
 	  let row =
-		grouping_spec#column_extractor ~num_contests ~index contest in
+		grouping_spec#extract_columns ~num_contests ~index contest in
 	  let matches =
 		List.exists
 		  (fun { Columns.content;
