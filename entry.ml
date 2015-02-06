@@ -1,7 +1,13 @@
 module C = Contest
 
-type t = { player: string; country: string option; seed: int option }
+type t = { name: string; country: string option; seed: int option }
 type column = string * string option
+
+let get_seed t = t.seed
+
+let get_country t = t.country
+
+let get_name t = t.name
 
 let to_string entry =
   let country_str = match entry.country with None->""
@@ -10,7 +16,7 @@ let to_string entry =
     (match entry.seed with None -> ""
                          | Some i -> "[" ^ (string_of_int i) ^ "]") in
   Printf.sprintf "%s%s"
-    (entry.player ^ country_str)
+    (entry.name ^ country_str)
     seed_str
 
 let t_of_string ?(expect_country=true) str =
@@ -31,7 +37,7 @@ let t_of_string ?(expect_country=true) str =
   let ends_with_seed_regex = Regexp.regexp "(^[^\\[]*)(\\[([0-9]+)\\]$)?" in
   let all_but_seed, seed =
     begin_and_end ends_with_seed_regex all_but_attribute int_of_string in
-  let get_player_with_country () =
+  let get_name_with_country () =
     let name_regex = Regexp.regexp "(^.+) ([A-Z][A-Z][A-Z])$" in
     match Regexp.string_match name_regex all_but_seed 0 with
     | Some result -> 
@@ -42,16 +48,16 @@ let t_of_string ?(expect_country=true) str =
     | None -> let _ = (failwith ("Invalid Name and Country: '" ^ all_but_seed ^"'"))
       in "", None (* wtf ? *)
   in
-  let get_player () = all_but_seed in
-  let player, country =
+  let get_name () = all_but_seed in
+  let name, country =
     if expect_country then
-      get_player_with_country ()
+      get_name_with_country ()
     else
-      get_player (), None
+      get_name (), None
   in
   let attribute = if attribute = "" then attribute
     else Printf.sprintf " (%s)" attribute in
-  { player = player ^ attribute ; country; seed }
+  { name = name ^ attribute ; country; seed }
 
 type slot = Bye | Somebody of t
 

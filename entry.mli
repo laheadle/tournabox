@@ -2,7 +2,16 @@
 
 (** An entry who may win or lose against another Entry.t, but always
     	beats a bye. *)
-type t = { player: string; country: string option; seed: int option }
+type t
+
+(** Get the optional seed *)
+val get_seed: t -> int option
+
+(** Get the optional country *)
+val get_country: t -> string option
+
+(** Get the name *)
+val get_name: t -> string
 
 val to_string: t -> string
 

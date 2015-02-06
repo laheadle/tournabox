@@ -21,31 +21,33 @@ let first_contest_first_entry group =
   let first = G.Group.first group in
   first_entry (Util.get_option first)
 
-let country =
+let get_country entry =
+  let entry = fetch entry in
+  match Entry.get_country entry with None -> assert false
+  | Some c ->
+    try
+      let country = List.assoc c Countries.codes in
+      country
+    with _ -> c
+
+class property_group (name: string)
+  ~get_header
+  ~get_column
+  ~(get_membership_property: Entry.slot -> string option) =
   object
     (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
-    method header_spec ~num_rounds ~num_groups ~pos:round group =
-      let get_country entry =
-        let entry = fetch entry in
-        match entry.country with None -> assert false
-                               | Some c ->
-                                 try
-                                   let country = List.assoc c Countries.codes in
-                                   country
-                                 with _ -> c
-      in
-      let country =  G.Group.extract_first_first group get_country
-      in
-      { Columns.header = Columns.(as_header (just_country country));
+	method header_spec ~(num_rounds: int) ~(num_groups: int) ~(pos: int) group =
+      let property =  G.Group.extract_first_first group get_header in
+      { Columns.header = Columns.(as_header (get_column property));
         should_filter_header = true; }
 
-    method name = "By Country";
+    method name = name
 
     method compare_contest c1 c2 =
       let entry contest =
         contest |> C.first |> fetch in
       let player contest =
-        contest |> C.first |> fetch |> (fun c -> c.player) in
+        contest |> C.first |> fetch |> (fun c -> Entry.get_name c) in
       compare_seeds (entry c1) (entry c2) ~if_none: (fun () ->
           compare (player c1) (player c2) )
 
@@ -53,11 +55,10 @@ let country =
 
     method in_group contest group = {
       Group.quit = false;
-      this_group = G.Group.match_first contest group (fun p ->
-          let p = fetch p in p.country)
+      this_group = G.Group.match_first contest group get_membership_property
     }
 
-    method extract_columns ~num_contests ~index contest =
+    method extract_columns ~(num_contests:int) ~(index:int) contest =
       let open Columns in
       let a = first_entry contest in
       let round = contest.C.round in
@@ -91,6 +92,10 @@ let country =
       columns
   end
 
+let country = new property_group "By Country"
+  ~get_header:get_country
+  ~get_column:Columns.just_country
+  ~get_membership_property: (fun p -> let p = fetch p in Entry.get_country p)
 
 let contains_player lst player =
   G.Group.contains (function
@@ -226,7 +231,7 @@ class seed_group = object
   method in_group contest group = {
     Group.quit = false;
     this_group = G.Group.match_first contest group
-        (fun e -> let e' = fetch e in e'.seed, to_string e')
+        (fun e -> let e' = fetch e in Entry.get_seed e', to_string e')
   }
 end
 

@@ -60,18 +60,18 @@ end
 
 let entry ?(filterable=true) e =
   let (class_name, seed) = 
-    match e.Entry.seed with
+    match Entry.get_seed e with
       Some s ->
       Classes.seeded, [Elt {class_name=Classes.seed;text=string_of_int s}]
     | _ -> Classes.unseeded, []
   in
   let country =
-    match e.Entry.country with
+    match Entry.get_country e with
       None -> []
     | Some c -> [ Elt {class_name=Classes.country;text=c} ]
   in
   let content=[
-    Elt {class_name=Classes.name;text=e.Entry.player}
+    Elt {class_name=Classes.name;text=Entry.get_name e}
   ] @ country @ seed
   in  {
     content;
@@ -123,7 +123,7 @@ let defeated ~winner loser =
     should_filter=false
   }
   in
-  match winner.Entry.seed, loser.Entry.seed with
+  match Entry.get_seed winner, Entry.get_seed loser with
     None, Some _ -> upset
   | Some a, Some b when a > b -> upset
   | _ ->
@@ -140,7 +140,7 @@ let was_defeated_by ~winner loser =
     should_filter=false
   }
   in
-  match winner.Entry.seed, loser.Entry.seed with
+  match Entry.get_seed winner, Entry.get_seed loser with
     None, Some _ -> upset
   | Some a, Some b when a > b -> upset
   | _ ->
