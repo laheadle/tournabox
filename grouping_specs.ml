@@ -5,7 +5,6 @@ open Entry
 
 let first_entry contest =
   let (first, _) = contest.C.entry_pair in
-  assert (Util.is_some first);
   let slot = Util.get_option first in
   assert (Entry.is_t slot);
   match slot with
@@ -17,6 +16,10 @@ let second_slot contest =
 
 let winner_slot contest =
   contest.C.winner
+
+let first_contest_first_entry group =
+  let first = G.Group.first group in
+  first_entry (Util.get_option first)
 
 let country =
 object
@@ -165,7 +168,7 @@ let round =
    end)
 
 (* for icons see http://www.famfamfam.com/lab/icons/flags/ *)
-class ['a] player_group = object
+class player_group = object
   method header_spec ~(num_rounds: int) ~(num_groups: int) ~(pos: int) group =
 	let header = G.Group.extract_first_first group fetch in
 	{ Columns.header = Columns.(as_header (entry header));
@@ -205,19 +208,17 @@ end
 
 
 class seed_group = object
-	inherit [slot C.t] player_group
+	inherit player_group
 	method name = "By Seed";
 	method compare_group g1 g2 =
-	(match (G.Group.first g1), (G.Group.first g2) with
-	  (Some { C.entry_pair = Some (Somebody a), _ ; _ },
-	   Some { C.entry_pair = Some (Somebody b), _ ; _ }) ->
+	  let a = first_contest_first_entry g1 in
+	  let b = first_contest_first_entry g2 in
 		compare_seeds a b ~if_none:(fun () ->
 		  let cmp =
 			compare (G.Group.length g2) (G.Group.length g1) in
 		  if cmp = 0 then
 			compare (to_string a) (to_string  b)
 		  else cmp)
-	| _ -> failwith "bad group compare")
   method in_group contest group = {
 	Group.quit = false;
 	this_group = G.Group.match_first contest group
@@ -226,21 +227,17 @@ class seed_group = object
   end
 
 class performance_group = object
-	inherit [slot C.t] player_group
+	inherit player_group
 	method name = "By Performance"
 	method compare_group g1 g2 =
 	  -(G.Group.compare_length_then_first g1 g2)
-	method in_group contest group = {
-	  Group.quit = false;
-	  this_group =
-		(match contest with
-		  { C.entry_pair = (Some (Somebody a)), _ ; _ }
-		  -> (match G.Group.first group with
-			Some { C.entry_pair = (Some (Somebody b)), _ } ->
-			  a = b
-		  | _ -> failwith "BUG: Bad existing member")
-		| _ -> failwith "BUG: Bad contest for group")
-	}
+	method in_group contest group =
+	  let a = first_entry contest in
+	  let b = first_contest_first_entry group in
+	  {
+		Group.quit = false;
+		this_group = a = b;
+	  }
    end
 
 let performance = new performance_group
