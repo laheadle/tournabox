@@ -1,5 +1,5 @@
 (** The top-level tournabox library. Clients can use these types and
-	values to find and run tournaboxes on web pages. *)
+    	values to find and run tournaboxes on web pages. *)
 
 (** An HTML element that will contain a visible tournabox. *)
 type container = Dom_html.element Js.t
@@ -11,7 +11,7 @@ type tourney_shell
 val get_all_containers : unit -> container list
 
 (** Given a container, return a tourney shell or None and an error
-	message. *)
+    	message. *)
 val get_tourney_shell : container -> tourney_shell option * string
 
 (** Play and display a tourney_shell. *)

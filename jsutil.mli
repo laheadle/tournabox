@@ -34,11 +34,11 @@ exception Not_text
 exception No_children
 
 (** Used for getting the raw text of DOM nodes containing entries or
-	outcomes. *)
+    	outcomes. *)
 val text_of : #Dom.node t -> string
 
 (** Get the y offset of an element. Used for scrolling to an element's
-	position *)
+    	position *)
 val offset_of : Dom_html.element t -> int
 
 (** Delete the children of a Dom node *)

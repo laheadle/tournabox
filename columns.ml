@@ -6,8 +6,8 @@ type shallow_span = {
 }
 
 type column_fragment =
-  Text of string
-| Elt of shallow_span
+    Text of string
+  | Elt of shallow_span
 
 type column = {
   content: column_fragment list;
@@ -60,23 +60,23 @@ end
 
 let entry ?(filterable=true) e =
   let (class_name, seed) = 
-	match e.Entry.seed with
-	  Some s ->
-		Classes.seeded, [Elt {class_name=Classes.seed;text=string_of_int s}]
-	| _ -> Classes.unseeded, []
+    match e.Entry.seed with
+      Some s ->
+      Classes.seeded, [Elt {class_name=Classes.seed;text=string_of_int s}]
+    | _ -> Classes.unseeded, []
   in
   let country =
-	match e.Entry.country with
-	  None -> []
-	| Some c -> [ Elt {class_name=Classes.country;text=c} ]
+    match e.Entry.country with
+      None -> []
+    | Some c -> [ Elt {class_name=Classes.country;text=c} ]
   in
   let content=[
-	Elt {class_name=Classes.name;text=e.Entry.player}
+    Elt {class_name=Classes.name;text=e.Entry.player}
   ] @ country @ seed
   in  {
-	content;
-	class_name=Some (Classes.entry ^ " " ^ class_name);
-	should_filter=filterable
+    content;
+    class_name=Some (Classes.entry ^ " " ^ class_name);
+    should_filter=filterable
   }
 
 let just_country c = {
@@ -87,18 +87,18 @@ let just_country c = {
 
 let as_header =
   let mk column str =
-	{ column with class_name = Some (str ^ " tournabox-header") }
+    { column with class_name = Some (str ^ " tournabox-header") }
   in function
-  | { class_name=Some str} as column -> mk column str
-  | { class_name=None} as column -> mk column ""
+    | { class_name=Some str} as column -> mk column str
+    | { class_name=None} as column -> mk column ""
 
 let in_round r =  {
   content=[
-	Text "In round";
-	Elt {
-	  class_name=Classes.round;
-	  text=string_of_int r;
-	}
+    Text "In round";
+    Elt {
+      class_name=Classes.round;
+      text=string_of_int r;
+    }
   ];
   class_name=Some Classes.in_round;
   should_filter=false
@@ -118,37 +118,37 @@ let with_a_bye = {
 
 let defeated ~winner loser =
   let upset = 	{
-	  content=[Text "upset"];
-	  class_name=Some Classes.upset;
-	  should_filter=false
-	}
+    content=[Text "upset"];
+    class_name=Some Classes.upset;
+    should_filter=false
+  }
   in
   match winner.Entry.seed, loser.Entry.seed with
-	None, Some _ -> upset
+    None, Some _ -> upset
   | Some a, Some b when a > b -> upset
   | _ ->
-	{
-	  content=[Text "defeated"];
-	  class_name=Some Classes.defeated;
-	  should_filter=false
-	}
+    {
+      content=[Text "defeated"];
+      class_name=Some Classes.defeated;
+      should_filter=false
+    }
 
 let was_defeated_by ~winner loser =
   let upset = 	{
-	  content=[Text "was upset by"];
-	  class_name=Some Classes.was_upset_by;
-	  should_filter=false
-	}
+    content=[Text "was upset by"];
+    class_name=Some Classes.was_upset_by;
+    should_filter=false
+  }
   in
   match winner.Entry.seed, loser.Entry.seed with
-	None, Some _ -> upset
+    None, Some _ -> upset
   | Some a, Some b when a > b -> upset
   | _ ->
-	{
-	  content=[Text "was defeated by"];
-	  class_name=Some Classes.was_defeated_by;
-	  should_filter=false
-	}
+    {
+      content=[Text "was defeated by"];
+      class_name=Some Classes.was_defeated_by;
+      should_filter=false
+    }
 
 
 let will_face = {

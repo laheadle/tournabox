@@ -6,13 +6,13 @@ let get_classname elt =
 
 let set_classname elt className =
   match className with
-	None -> ()
+    None -> ()
   | Some c -> elt##className <- (Js.string c)
 
 let table className = 
-	let table = Dom_html.createTable doc in
-	set_classname table className;
-	table
+  let table = Dom_html.createTable doc in
+  set_classname table className;
+  table
 
 let textNode str = doc##createTextNode (Js.string str)
 
@@ -25,7 +25,7 @@ let addTd tr str className =
 let getElementById_exn id = 
   let c = doc##getElementById (Js.string id) in
   Js.Opt.case c (fun () -> failwith ("There is no element with id " ^ id))
-	(fun node -> node)
+    (fun node -> node)
 
 let getAttribute_exn node attr =
   let opt = node##getAttribute (Js.string attr) in
@@ -61,10 +61,10 @@ let text_of elt =
 
 let offset_of elt =
   let rec iter acc elt =
-	Js.Opt.case (elt##offsetParent)
-	  (fun () -> acc)
-	  (fun parent ->
-		iter (acc + (parent##offsetTop)) parent)
+    Js.Opt.case (elt##offsetParent)
+      (fun () -> acc)
+      (fun parent ->
+         iter (acc + (parent##offsetTop)) parent)
   in
   iter (elt##offsetTop) elt
 
@@ -74,4 +74,4 @@ let delete_children node =
     Js.Opt.iter (node##firstChild) (fun child -> Dom.removeChild node child) ;
   done
 
-					   
+

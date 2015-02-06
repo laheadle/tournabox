@@ -29,6 +29,9 @@ dev: checkTestDir install
 	cp `ocamlfind query $(project)`/$(project).js $(TOURNABOX_TESTDIR)
 	cp ./tst.html $(TOURNABOX_TESTDIR)
 
+indent:
+	ocp-indent --inplace *.mli *.ml questions/*.ml*
+
 install: uninstall js doc
 	ocamlfind install $(project) META $(project).js $(project).css $(project).less
 	mkdir -p `ocamlfind query $(project)`/../../doc/$(project)
@@ -60,4 +63,4 @@ question: dev checkTestDir
 	js_of_ocaml $(JSO_DEBUG_FLAGS) test_$(CASE).byte
 	cp test_$(CASE).js questions/test_$(CASE).html $(TOURNABOX_TESTDIR)
 
-.PHONY: testSuite js dev install uninstall checkTestDir question
+.PHONY: testSuite js dev install uninstall checkTestDir question indent

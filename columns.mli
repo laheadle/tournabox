@@ -22,8 +22,8 @@ type shallow_span = {
 
 (** The atomic element of a column. *)
 type column_fragment =
-  Text of string
-| Elt of shallow_span
+    Text of string
+  | Elt of shallow_span
 
 (** A column in the UI. *)
 type column = {
@@ -47,14 +47,14 @@ val column_content_string : column_fragment list -> string
 val is_upset : column list -> bool
 
 (** Render an entry as a complex column, including country and
-	seed. *)
+    	seed. *)
 val entry : ?filterable:bool -> Entry.t -> column
 
 (** Get a column containing just a country name *)
 val just_country : string -> column
 
 (** Adds a header class to an existing column, thereby treating it as
-	a header. *)
+    	a header. *)
 val as_header : column -> column
 
 (** "In round N" *)
@@ -67,11 +67,11 @@ val advanced : column
 val with_a_bye : column
 
 (** Renders either a "defeated" or "upset" column, based on seed
-	disparity. *)
+    	disparity. *)
 val defeated : winner:Entry.t -> Entry.t -> column
 
 (** Renders either a "defeated" or "upset" column, based on seed
-	disparity. *)
+    	disparity. *)
 val was_defeated_by : winner:Entry.t -> Entry.t -> column
 
 (** "will face" *)

@@ -36,8 +36,8 @@ val strip_spaces : string -> string
 val hd_exn : 'a list -> 'a
 
 (** [pick list partial to_string] returns the element of list that
-	matches partial. to_string is called to get the string representation
-	of each member of list. *)
+    	matches partial. to_string is called to get the string representation
+    	of each member of list. *)
 val pick : 'a list -> string -> ('a -> string) -> 'a
 
 (** The identity function *)

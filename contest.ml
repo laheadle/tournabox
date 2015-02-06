@@ -11,13 +11,13 @@ let first = function
 
 
 let map f = function
-{ entry_pair=(p1,p2); winner; _ } as contest ->
-  let convert opt = match opt with
-	  None -> None 
-	| Some pi -> Some (f pi)
-  in
-  { contest with
-	entry_pair = (convert p1, convert p2);
-	winner = convert winner;
-  }
+    { entry_pair=(p1,p2); winner; _ } as contest ->
+    let convert opt = match opt with
+        None -> None 
+      | Some pi -> Some (f pi)
+    in
+    { contest with
+      entry_pair = (convert p1, convert p2);
+      winner = convert winner;
+    }
 
